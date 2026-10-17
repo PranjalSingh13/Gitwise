@@ -125,37 +125,137 @@ app.post('/api/v1/academy/simulate', (req, res) => {
   }
 
   const cleanCmd = (command || '').trim();
+  const lowerCmd = cleanCmd.toLowerCase();
 
-  // Basic command simulator response
   let output = '';
   let updatedState = { ...currentState };
   let isStepCorrect = false;
 
-  if (cleanCmd === 'git status') {
-    output = updatedState.statusText || 'On branch ' + updatedState.currentBranch;
-    isStepCorrect = true;
-  } else if (cleanCmd.startsWith('git add')) {
+  // 1. git init
+  if (lowerCmd === 'git init' || lowerCmd.startsWith('git init ')) {
+    output = `Initialized empty Git repository in /workspace/.git/`;
+    if (lesson.expectedCommands.some(c => c.toLowerCase().includes('git init'))) {
+      isStepCorrect = true;
+    }
+  }
+  // 2. git status
+  else if (lowerCmd === 'git status' || lowerCmd === 'git status -s') {
+    output = updatedState.statusText || `On branch ${updatedState.currentBranch || 'main'}\nnothing to commit, working tree clean`;
+    if (lesson.expectedCommands.some(c => c.toLowerCase().includes('git status'))) {
+      isStepCorrect = true;
+    }
+  }
+  // 3. git add
+  else if (lowerCmd.startsWith('git add')) {
     output = '';
-    updatedState.statusText = `On branch ${updatedState.currentBranch}\nChanges to be committed:\n\tmodified: src/app.ts`;
-    isStepCorrect = true;
-  } else if (cleanCmd.startsWith('git commit')) {
+    updatedState.statusText = `On branch ${updatedState.currentBranch || 'main'}\nChanges to be committed:\n  (use "git restore --staged <file>..." to unstage)\n\tmodified:   src/app.ts\n`;
+    if (lesson.expectedCommands.some(c => c.toLowerCase().includes('git add'))) {
+      isStepCorrect = true;
+    }
+  }
+  // 4. git commit
+  else if (lowerCmd.startsWith('git commit')) {
     const match = cleanCmd.match(/["'](.*?)["']/);
-    const msg = match ? match[1] : 'commit update';
-    output = `[${updatedState.currentBranch} d3e4f5a] ${msg}\n 1 file changed, 14 insertions(+)`;
-    updatedState.statusText = `On branch ${updatedState.currentBranch}\nnothing to commit, working tree clean`;
-    updatedState.commits = [{ hash: 'd3e4f5a', message: msg, author: 'Student <student@gitwise.dev>' }, ...(updatedState.commits || [])];
-    isStepCorrect = true;
-  } else if (cleanCmd.startsWith('git switch -c') || cleanCmd.startsWith('git checkout -b')) {
-    const branchName = cleanCmd.split(/\s+/)[3] || 'new-feature';
+    const msg = match ? match[1] : 'chore: update project';
+    const randSha = Math.random().toString(16).substring(2, 9);
+    output = `[${updatedState.currentBranch || 'main'} ${randSha}] ${msg}\n 1 file changed, 14 insertions(+)`;
+    updatedState.statusText = `On branch ${updatedState.currentBranch || 'main'}\nnothing to commit, working tree clean`;
+    updatedState.commits = [
+      { hash: randSha, message: msg, author: 'Student <student@gitwise.dev>' },
+      ...(updatedState.commits || [])
+    ];
+    if (lesson.expectedCommands.some(c => c.toLowerCase().includes('git commit'))) {
+      isStepCorrect = true;
+    }
+  }
+  // 5. git log
+  else if (lowerCmd.startsWith('git log')) {
+    const commits = updatedState.commits || [
+      { hash: 'e4f5g6h', message: 'feat: add user schema', author: 'Dev <dev@gitwise.dev>' },
+      { hash: 'a1b2c3d', message: 'chore: initial project setup', author: 'Dev <dev@gitwise.dev>' }
+    ];
+    if (lowerCmd.includes('--oneline')) {
+      output = commits.map((c: any) => `${c.hash.slice(0, 7)} ${c.message}`).join('\n');
+    } else {
+      output = commits.map((c: any) => `commit ${c.hash}\nAuthor: ${c.author}\nDate:   ${new Date().toDateString()}\n\n    ${c.message}\n`).join('\n');
+    }
+    if (lesson.expectedCommands.some(c => c.toLowerCase().includes('git log'))) {
+      isStepCorrect = true;
+    }
+  }
+  // 6. git diff
+  else if (lowerCmd.startsWith('git diff')) {
+    output = `diff --git a/src/app.ts b/src/app.ts\n--- a/src/app.ts\n+++ b/src/app.ts\n@@ -1,3 +1,5 @@\n+import { router } from './routes';\n+app.use('/api', router);`;
+    if (lesson.expectedCommands.some(c => c.toLowerCase().includes('git diff'))) {
+      isStepCorrect = true;
+    }
+  }
+  // 7. git branch
+  else if (lowerCmd === 'git branch' || lowerCmd.startsWith('git branch ')) {
+    const branches = updatedState.branches || ['main'];
+    output = branches.map((b: string) => b === updatedState.currentBranch ? `* ${b}` : `  ${b}`).join('\n');
+    if (lesson.expectedCommands.some(c => c.toLowerCase().includes('git branch'))) {
+      isStepCorrect = true;
+    }
+  }
+  // 8. git switch / checkout
+  else if (lowerCmd.startsWith('git switch') || lowerCmd.startsWith('git checkout')) {
+    const parts = cleanCmd.split(/\s+/);
+    const branchName = parts[parts.length - 1] || 'feature/new-branch';
+    if (cleanCmd.includes('-c') || cleanCmd.includes('-b')) {
+      updatedState.branches = Array.from(new Set([...(updatedState.branches || []), branchName]));
+      output = `Switched to a new branch '${branchName}'`;
+    } else {
+      output = `Switched to branch '${branchName}'`;
+    }
     updatedState.currentBranch = branchName;
-    updatedState.branches = Array.from(new Set([...(updatedState.branches || []), branchName]));
-    output = `Switched to a new branch '${branchName}'`;
-    isStepCorrect = true;
-  } else if (cleanCmd.startsWith('git revert')) {
-    output = `[${updatedState.currentBranch} 776655a] Revert "bad commit"\n 1 file changed, 4 deletions(-)`;
-    isStepCorrect = true;
+    if (lesson.expectedCommands.some(c => c.toLowerCase().includes('switch') || c.toLowerCase().includes('checkout'))) {
+      isStepCorrect = true;
+    }
+  }
+  // 9. git remote
+  else if (lowerCmd.startsWith('git remote')) {
+    if (lowerCmd.includes('-v')) {
+      output = `origin  https://github.com/developer/repo.git (fetch)\norigin  https://github.com/developer/repo.git (push)`;
+    } else {
+      output = `origin`;
+    }
+    if (lesson.expectedCommands.some(c => c.toLowerCase().includes('remote'))) {
+      isStepCorrect = true;
+    }
+  }
+  // 10. git pull / fetch / push
+  else if (lowerCmd.startsWith('git pull')) {
+    output = `Updating 4a12bc..7f89de\nFast-forward\n src/app.ts | 4 ++++\n 1 file changed, 4 insertions(+)`;
+    if (lesson.expectedCommands.some(c => c.toLowerCase().includes('pull'))) isStepCorrect = true;
+  } else if (lowerCmd.startsWith('git fetch')) {
+    output = `From https://github.com/developer/repo\n * [new branch]      main       -> origin/main`;
+    if (lesson.expectedCommands.some(c => c.toLowerCase().includes('fetch'))) isStepCorrect = true;
+  } else if (lowerCmd.startsWith('git push')) {
+    output = `To https://github.com/developer/repo.git\n   a1b2c3d..e4f5g6h  ${updatedState.currentBranch || 'main'} -> ${updatedState.currentBranch || 'main'}`;
+    if (lesson.expectedCommands.some(c => c.toLowerCase().includes('push'))) isStepCorrect = true;
+  }
+  // 11. git revert
+  else if (lowerCmd.startsWith('git revert')) {
+    const revSha = Math.random().toString(16).substring(2, 9);
+    output = `[${updatedState.currentBranch || 'main'} ${revSha}] Revert "bad commit"\n 1 file changed, 4 deletions(-)`;
+    if (lesson.expectedCommands.some(c => c.toLowerCase().includes('revert'))) isStepCorrect = true;
+  }
+  // 12. git restore / reset
+  else if (lowerCmd.startsWith('git restore') || lowerCmd.startsWith('git reset')) {
+    output = `Unstaged changes after reset:\nM\tsrc/app.ts`;
+    updatedState.statusText = `On branch ${updatedState.currentBranch || 'main'}\nChanges not staged for commit:\n\tmodified:   src/app.ts\n`;
+    if (lesson.expectedCommands.some(c => c.toLowerCase().includes('restore') || c.toLowerCase().includes('reset'))) isStepCorrect = true;
+  }
+  // 13. git help
+  else if (lowerCmd === 'git help' || lowerCmd === 'help' || lowerCmd === 'git --help') {
+    output = `Common Git commands supported:\n  init       Create an empty Git repository\n  status     Show working tree status\n  add        Stage file contents\n  commit     Record changes to repository\n  log        Show commit history\n  diff       Show changes between commits/working tree\n  branch     List or create branches\n  switch     Switch branches\n  checkout   Switch branches or restore files\n  remote     Manage tracked remote repositories\n  pull       Fetch from and integrate with remote\n  push       Update remote refs\n  revert     Revert an existing commit`;
+  }
+  // 14. clear
+  else if (lowerCmd === 'clear') {
+    output = '__CLEAR__';
   } else {
-    output = `git: '${cleanCmd}' is not recognized for this exercise step. Check the hints.`;
+    output = `git: '${cleanCmd}' is not recognized. Type "git help" for available commands.`;
     isStepCorrect = false;
   }
 
@@ -166,6 +266,7 @@ app.post('/api/v1/academy/simulate', (req, res) => {
     hint: !isStepCorrect ? lesson.hints[0] : undefined
   });
 });
+
 
 app.listen(config.port, () => {
   console.log(`🚀 GitWise Core API running on http://localhost:${config.port}`);

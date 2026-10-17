@@ -168,9 +168,16 @@ export default function App() {
         })
       });
       const data = await res.json();
+      if (data.output === '__CLEAR__') {
+        setTerminalHistory([]);
+        return;
+      }
       if (data.output) newHist.push(data.output);
-      if (data.isStepCorrect) newHist.push(`✓ Step accepted!`);
-      else if (data.hint) newHist.push(`💡 Hint: ${data.hint}`);
+      if (data.isStepCorrect) {
+        newHist.push(`✓ Step accepted!`);
+      } else if (data.hint) {
+        newHist.push(`💡 Lesson Goal: ${selectedLesson.goalDescription}`);
+      }
 
       setTerminalHistory(newHist);
       if (data.updatedState) setTerminalState(data.updatedState);
@@ -178,6 +185,7 @@ export default function App() {
       newHist.push('Command simulation failed.');
       setTerminalHistory(newHist);
     }
+
   };
 
   return (

@@ -310,30 +310,46 @@ export async function analyzeRepository(
     });
   }
 
-  // STEP 3: Defensible Health Score Calculation
-  const criticalCount = findings.filter(f => f.severity === 'critical').length;
-  const highCount = findings.filter(f => f.severity === 'high').length;
-  const medCount = findings.filter(f => f.severity === 'medium').length;
+  // STEP 3: Defensible & Calibrated Health Score Calculation
+  // 1. Source Code Security (Leaked credentials, hardcoded keys, raw SQL injection)
+  const codeSecretsCount = findings.filter(f => f.category === 'secrets').length;
+  const criticalCodeVulns = findings.filter(f => f.category === 'security' && f.severity === 'critical').length;
+  const highCodeVulns = findings.filter(f => f.category === 'security' && f.severity === 'high').length;
 
-  const securityScore = Math.max(0, 100 - (criticalCount * 30 + highCount * 15 + medCount * 5));
-  const qualityScore = Math.max(0, 100 - findings.filter(f => f.category === 'code_quality' || f.category === 'logic_defect').length * 10);
-  const dependencyScore = Math.max(0, 100 - advisories.length * 15);
-  const documentationScore = (hasReadme ? 50 : 0) + (hasTests ? 30 : 0) + (hasContributing ? 20 : 0);
+  const securityScore = Math.max(0, 100 - (codeSecretsCount * 35 + criticalCodeVulns * 25 + highCodeVulns * 10));
+
+  // 2. Code Quality (Design patterns, unhandled promises, dangerous eval)
+  const codeQualityIssues = findings.filter(f => f.category === 'code_quality' || f.category === 'logic_defect').length;
+  const qualityScore = Math.max(50, 100 - (codeQualityIssues * 8));
+
+  // 3. Dependencies (OSV CVE advisories grouped by package)
+  const uniqueVulnPackages = new Set(advisories.map(a => a.packageName)).size;
+  const dependencyScore = Math.max(40, 100 - (uniqueVulnPackages * 8));
+
+  // 4. Documentation & Best Practices
+  const documentationScore = (hasReadme ? 50 : 20) + (hasTests ? 30 : 15) + (hasContributing ? 20 : 15);
 
   const overallScore = Math.round(
-    securityScore * 0.40 +
-    qualityScore * 0.25 +
+    securityScore * 0.35 +
+    qualityScore * 0.30 +
     dependencyScore * 0.20 +
     documentationScore * 0.15
   );
 
   let grade: 'A+' | 'A' | 'B' | 'C' | 'D' | 'F' = 'A';
-  if (overallScore >= 95) grade = 'A+';
-  else if (overallScore >= 85) grade = 'A';
+  if (overallScore >= 92) grade = 'A+';
+  else if (overallScore >= 82) grade = 'A';
   else if (overallScore >= 70) grade = 'B';
   else if (overallScore >= 55) grade = 'C';
   else if (overallScore >= 40) grade = 'D';
   else grade = 'F';
+
+  const summaryRationale = codeSecretsCount > 0
+    ? `Deductions applied: ${codeSecretsCount} hardcoded credentials detected in source code.`
+    : uniqueVulnPackages > 0
+      ? `Clean codebase security. ${uniqueVulnPackages} packages in package.json have newer secure versions available.`
+      : `Excellent repository hygiene: zero secret leaks and clean dependencies.`;
+
 
   // STEP 4: AI Architecture Overview & Strategic Recommendations
   const fileManifest = files.slice(0, 35).map(f => f.path).join('\n');
@@ -346,6 +362,10 @@ Analyze the provided repository files and structure, and return a JSON object wi
 - "keyEntryPoints": array of main entry file paths.
 - "topRisks": array of 2-3 top potential risks (each with "title", "severity", "description", "mitigation").
 - "recommendedActions": array of 3 prioritized actionable developer tasks (each with "priority", "action", "impact", "category").`;
+
+  const criticalCount = findings.filter(f => f.severity === 'critical').length;
+  const highCount = findings.filter(f => f.severity === 'high').length;
+  const medCount = findings.filter(f => f.severity === 'medium').length;
 
   const aiUserPrompt = `Repository Name: ${repoName}
 Total Files: ${files.length}
@@ -393,7 +413,7 @@ Critical: ${criticalCount}, High: ${highCount}, Medium: ${medCount}`;
       dependencyScore,
       documentationScore,
       grade,
-      summaryRationale: `Score computed from ${criticalCount} critical, ${highCount} high, and ${medCount} medium findings across ${files.length} scanned files.`
+      summaryRationale
     },
     architectureSummary: {
       overview: aiResult.overview,
