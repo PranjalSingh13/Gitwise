@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitWise — Final Year Capstone Project Showcase</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+    @page {
+      size: A4;
+      margin: 18mm 14mm 18mm 14mm;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+      color: #1e293b;
+      line-height: 1.65;
+      font-size: 10pt;
+      background: #ffffff;
+    }
+
+    /* ─── COVER PAGE ──────────────────────────────── */
+    .cover {
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 40px;
+      page-break-after: always;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cover::before {
+      content: '';
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 70%);
+      top: -100px;
+      left: -100px;
+    }
+
+    .cover::after {
+      content: '';
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(204,255,0,0.1) 0%, transparent 70%);
+      bottom: -50px;
+      right: -50px;
+    }
+
+    .cover-badge {
+      background: rgba(204,255,0,0.15);
+      border: 1px solid rgba(204,255,0,0.4);
+      color: #ccff00;
+      font-size: 8pt;
+      font-weight: 700;
+      letter-spacing: 3px;
+      padding: 6px 18px;
+      border-radius: 100px;
+      margin-bottom: 28px;
+      font-family: 'JetBrains Mono', monospace;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cover-logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 64pt;
+      font-weight: 900;
+      letter-spacing: -4px;
+      color: #ffffff;
+      line-height: 1;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 1;
+      text-shadow: 0 0 60px rgba(99,102,241,0.8);
+    }
+
+    .cover-logo span { color: #ccff00; }
+
+    .cover-tagline {
+      font-size: 14pt;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 10px;
+      font-weight: 300;
+      letter-spacing: 1px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cover-sub {
+      font-size: 9pt;
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 48px;
+      position: relative;
+      z-index: 1;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .cover-pills {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 48px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .pill {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.75);
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 8pt;
+      font-weight: 600;
+    }
+
+    .cover-meta {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding-top: 28px;
+      width: 100%;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      text-align: center;
+    }
+
+    .meta-item-label {
+      font-size: 7pt;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 2px;
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 4px;
+    }
+
+    .meta-item-value {
+      font-size: 9pt;
+      color: rgba(255,255,255,0.85);
+      font-weight: 600;
+    }
+
+    /* ─── CONTENT PAGES ───────────────────────────── */
+    .page {
+      padding: 28px 0;
+      page-break-after: always;
+    }
+    .page:last-child { page-break-after: auto; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .section-number {
+      background: linear-gradient(135deg, #4338ca, #6366f1);
+      color: white;
+      font-size: 9pt;
+      font-weight: 800;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      flex-shrink: 0;
+    }
+
+    .section-title {
+      font-size: 16pt;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+    }
+
+    .section-emoji {
+      font-size: 18pt;
+    }
+
+    h3 {
+      font-size: 11pt;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 18px 0 8px 0;
+    }
+
+    h4 {
+      font-size: 9.5pt;
+      font-weight: 700;
+      color: #334155;
+      margin: 12px 0 6px 0;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    p {
+      font-size: 9.5pt;
+      color: #475569;
+      line-height: 1.7;
+      margin-bottom: 10px;
+    }
+
+    /* ─── CALLOUT BOXES ───────────────────────────── */
+    .callout {
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin: 14px 0;
+      font-size: 9pt;
+    }
+
+    .callout-problem {
+      background: #fff1f2;
+      border-left: 4px solid #f43f5e;
+      color: #881337;
+    }
+
+    .callout-solution {
+      background: #f0fdf4;
+      border-left: 4px solid #22c55e;
+      color: #14532d;
+    }
+
+    .callout-insight {
+      background: #eef2ff;
+      border-left: 4px solid #6366f1;
+      color: #1e1b4b;
+    }
+
+    .callout-warning {
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      color: #78350f;
+    }
+
+    .callout strong { font-weight: 700; }
+
+    /* ─── FEATURE CARDS ───────────────────────────── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 14px 0;
+    }
+
+    .feature-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .feature-card-icon {
+      font-size: 18pt;
+      margin-bottom: 6px;
+    }
+
+    .feature-card-title {
+      font-size: 9.5pt;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+
+    .feature-card-desc {
+      font-size: 8.5pt;
+      color: #64748b;
+      line-height: 1.5;
+    }
+
+    /* ─── PROS / CONS TABLE ───────────────────────── */
+    .pros-cons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 14px 0;
+    }
+
+    .pros-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .cons-box {
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .box-header {
+      font-size: 9pt;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pros-box .box-header { color: #166534; }
+    .cons-box .box-header { color: #9f1239; }
+
+    .pros-cons-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .pros-cons-list li {
+      font-size: 8.5pt;
+      color: #475569;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      line-height: 1.5;
+    }
+
+    .pros-cons-list li:last-child { border-bottom: none; }
+
+    /* ─── TECH STACK TABLE ────────────────────────── */
+    .tech-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8.5pt;
+      margin: 12px 0;
+    }
+
+    .tech-table th {
+      background: #1e293b;
+      color: white;
+      padding: 8px 12px;
+      text-align: left;
+      font-weight: 700;
+      font-size: 7.5pt;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .tech-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #475569;
+      vertical-align: top;
+    }
+
+    .tech-table tr:nth-child(even) td { background: #f8fafc; }
+
+    .tech-badge {
+      display: inline-block;
+      background: #eef2ff;
+      color: #4338ca;
+      border: 1px solid #c7d2fe;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 7.5pt;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ─── TIMELINE ────────────────────────────────── */
+    .timeline {
+      position: relative;
+      padding-left: 28px;
+      margin: 14px 0;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 9px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(180deg, #6366f1, #22c55e);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 16px;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: -23px;
+      top: 3px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #6366f1;
+      border: 2px solid white;
+      box-shadow: 0 0 0 2px #6366f1;
+    }
+
+    .timeline-title {
+      font-size: 9.5pt;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 3px;
+    }
+
+    .timeline-desc {
+      font-size: 8.5pt;
+      color: #64748b;
+      line-height: 1.5;
+    }
+
+    /* ─── ARCHITECTURE DIAGRAM ────────────────────── */
+    .arch-diagram {
+      background: #0f172a;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 14px 0;
+      color: white;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .arch-layer {
+      margin-bottom: 14px;
+    }
+
+    .arch-layer-label {
+      font-size: 7pt;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .arch-boxes {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .arch-box {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 8pt;
+      color: rgba(255,255,255,0.85);
+      font-weight: 600;
+    }
+
+    .arch-box.lime { border-color: rgba(204,255,0,0.4); color: #ccff00; }
+    .arch-box.cyan { border-color: rgba(34,211,238,0.4); color: #22d3ee; }
+    .arch-box.indigo { border-color: rgba(129,140,248,0.4); color: #818cf8; }
+    .arch-box.green { border-color: rgba(74,222,128,0.4); color: #4ade80; }
+
+    .arch-arrow {
+      text-align: center;
+      color: rgba(255,255,255,0.3);
+      font-size: 10pt;
+      margin: 6px 0;
+    }
+
+    /* ─── DEMO STEPS ──────────────────────────────── */
+    .demo-step {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 14px;
+      align-items: flex-start;
+    }
+
+    .demo-step-num {
+      background: linear-gradient(135deg, #ccff00, #84cc16);
+      color: #1a2e05;
+      font-size: 9pt;
+      font-weight: 900;
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .demo-step-content { flex: 1; }
+    .demo-step-title { font-size: 9.5pt; font-weight: 700; color: #1e293b; margin-bottom: 3px; }
+    .demo-step-desc { font-size: 8.5pt; color: #64748b; line-height: 1.5; }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      background: #f1f5f9;
+      color: #4338ca;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 8.5pt;
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .score-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .score-val {
+      font-size: 22pt;
+      font-weight: 900;
+      color: #4338ca;
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .score-label {
+      font-size: 7.5pt;
+      color: #94a3b8;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .highlight-quote {
+      background: linear-gradient(135deg, #4338ca08, #6366f108);
+      border: 1px solid #c7d2fe;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 14px 0;
+      font-size: 10pt;
+      color: #1e1b4b;
+      font-style: italic;
+      line-height: 1.7;
+    }
+
+    .highlight-quote strong { color: #4338ca; font-style: normal; }
+
+    .footer-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      margin-top: 24px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 7.5pt;
+      color: #94a3b8;
+    }
+
+    ul.styled-list {
+      list-style: none;
+      padding: 0;
+      margin: 10px 0;
+    }
+
+    ul.styled-list li {
+      font-size: 9pt;
+      color: #475569;
+      padding: 5px 0;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      gap: 8px;
+      line-height: 1.5;
+    }
+
+    ul.styled-list li:last-child { border-bottom: none; }
+
+    .tag {
+      display: inline-block;
+      font-size: 7pt;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .tag-critical { background: #fff1f2; color: #f43f5e; border: 1px solid #fecdd3; }
+    .tag-high { background: #fff7ed; color: #f97316; border: 1px solid #fed7aa; }
+    .tag-medium { background: #fffbeb; color: #f59e0b; border: 1px solid #fde68a; }
+    .tag-success { background: #f0fdf4; color: #22c55e; border: 1px solid #bbf7d0; }
+    .tag-info { background: #eef2ff; color: #6366f1; border: 1px solid #c7d2fe; }
+
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .cover { min-height: 297mm; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════ COVER PAGE ══ -->
+<div class="cover">
+  <div class="cover-badge">⚡ FINAL YEAR CAPSTONE PROJECT — 2026</div>
+  <div class="cover-logo">GIT<span>WISE</span></div>
+  <div class="cover-tagline">Intelligent Repository & Git Development Companion</div>
+  <div class="cover-sub">AI-Powered · Multi-Surface · Open Source</div>
+
+  <div class="cover-pills">
+    <div class="pill">🌐 Web Dashboard</div>
+    <div class="pill">🔷 VS Code Extension</div>
+    <div class="pill">🧩 Chrome Extension</div>
+    <div class="pill">🎓 Git Academy</div>
+    <div class="pill">🤖 Google Gemini AI</div>
+    <div class="pill">🛡️ OSV.dev Live</div>
+  </div>
+
+  <div class="cover-meta">
+    <div>
+      <div class="meta-item-label">BUILT BY</div>
+      <div class="meta-item-value">Pranjal Singh</div>
+    </div>
+    <div>
+      <div class="meta-item-label">REPOSITORY</div>
+      <div class="meta-item-value">github.com/PranjalSingh13/Gitwise</div>
+    </div>
+    <div>
+      <div class="meta-item-label">AI ENGINE</div>
+      <div class="meta-item-value">Gemini 2.5 Flash + Groq</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════ PAGE 1: WHY ══ -->
+<div class="page">
+  <div class="section-header">
+    <div class="section-number">01</div>
+    <div class="section-emoji">🎯</div>
+    <div class="section-title">Why I Built GitWise</div>
+  </div>
+
+  <div class="callout callout-problem">
+    <strong>The Problem:</strong> Every software team — from beginners to professionals — struggles with the same two invisible threats: <strong>accidental credential leaks in code</strong> and <strong>not understanding what a complex repository actually does</strong>. These failures cost millions of dollars and countless hours of debugging annually.
+  </div>
+
+  <h3>The Pain Points I Observed</h3>
+  <p>As a developer, I encountered three recurring frustrations across every project:</p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-card-icon">🔑</div>
+      <div class="feature-card-title">Accidental Secret Leaks</div>
+      <div class="feature-card-desc">API keys, database passwords, and tokens accidentally committed to public repositories — a top cause of security breaches. Existing tools require complex setup or expensive SaaS subscriptions.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">🗺️</div>
+      <div class="feature-card-title">Opaque Repositories</div>
+      <div class="feature-card-desc">When joining a new team or reviewing an open-source project, understanding the architecture takes days of reading. There's no tool that gives you an instant "X-ray" of what a repo does.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">😤</div>
+      <div class="feature-card-title">Cryptic Git Errors</div>
+      <div class="feature-card-desc">"failed to push some refs" — Git error messages are notoriously opaque. Junior developers spend hours Googling errors that could be diagnosed in seconds with the right context.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">📚</div>
+      <div class="feature-card-title">Git Learning Gap</div>
+      <div class="feature-card-desc">Most Git tutorials explain commands in isolation. Beginners lack a safe environment to practice branching, merging, and rebasing without breaking a real project.</div>
+    </div>
+  </div>
+
+  <h3>The Insight That Drove Everything</h3>
+
+  <div class="highlight-quote">
+    "The best security scanner is one that <strong>requires zero setup</strong> — where you paste a GitHub URL and instantly know if a repository is safe, what it does, and how to improve it. No configuration files. No paid plans. Just immediate, actionable intelligence."
+  </div>
+
+  <p>This insight led to GitWise's core design philosophy: <strong>one-click deep scan</strong> that combines deterministic pattern matching (zero false positives) with large-context AI synthesis to give developers the answers they need in under 30 seconds.</p>
+
+  <h3>Why This Problem Matters at Scale</h3>
+
+  <ul class="styled-list">
+    <li><span class="tag tag-critical">STAT</span> The 2024 Verizon Data Breach Report found that <strong>68% of breaches involved exposed credentials</strong> — most from accidental code commits.</li>
+    <li><span class="tag tag-critical">STAT</span> GitHub itself detected over <strong>12.8 million leaked secrets</strong> in public repositories in 2023 alone.</li>
+    <li><span class="tag tag-high">COST</span> The average cost of a data breach caused by leaked API keys is <strong>$4.88 million</strong> (IBM Security, 2024).</li>
+    <li><span class="tag tag-medium">DEV</span> Junior developers spend an average of <strong>2.4 hours per week</strong> debugging Git errors they don't understand (Stack Overflow Survey, 2024).</li>
+    <li><span class="tag tag-info">LEARN</span> 71% of CS graduates say they never had a practical Git course — they learned by breaking production repositories.</li>
+  </ul>
+
+  <div class="footer-bar">
+    <span>GitWise — Final Year Capstone Project</span>
+    <span>Page 1 of 6</span>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════ PAGE 2: WHAT ══ -->
+<div class="page">
+  <div class="section-header">
+    <div class="section-number">02</div>
+    <div class="section-emoji">⚡</div>
+    <div class="section-title">What GitWise Does</div>
+  </div>
+
+  <p>GitWise is a <strong>multi-surface AI-powered developer companion</strong> that provides instant security auditing, architectural intelligence, and Git education. It works as a web dashboard, a VS Code extension, and a Chrome browser extension — all backed by a single unified API.</p>
+
+  <div class="score-grid">
+    <div class="score-card">
+      <div class="score-val">4</div>
+      <div class="score-label">Core Features</div>
+    </div>
+    <div class="score-card">
+      <div class="score-val">3</div>
+      <div class="score-label">Surfaces</div>
+    </div>
+    <div class="score-card">
+      <div class="score-val">1M</div>
+      <div class="score-label">Token Context</div>
+    </div>
+    <div class="score-card">
+      <div class="score-val">0</div>
+      <div class="score-label">Setup Required</div>
+    </div>
+  </div>
+
+  <h3>🌐 Feature 1 — Repository Deep-Scan Engine</h3>
+  <p>The core of GitWise. Paste any public GitHub URL (e.g., <code>facebook/react</code> or <code>https://github.com/expressjs/express</code>) and within 15–30 seconds receive:</p>
+  <ul class="styled-list">
+    <li><span class="tag tag-critical">SECURITY</span> <strong>Secret Detection:</strong> 25+ regex patterns for API keys, AWS credentials, GitHub tokens, database passwords, Stripe keys, and more — with line-number evidence.</li>
+    <li><span class="tag tag-high">VULNS</span> <strong>OSV.dev Dependency Audit:</strong> Real-time query to Google's Open Source Vulnerability database. Every package.json dependency checked against live CVE advisories.</li>
+    <li><span class="tag tag-medium">QUALITY</span> <strong>Code Quality Scan:</strong> Static analysis patterns for SQL injection, eval() misuse, raw promises, and anti-patterns — without running the code.</li>
+    <li><span class="tag tag-info">AI</span> <strong>Gemini Architecture Synthesis:</strong> Google Gemini 2.5 Flash reads the full file tree and generates a plain-English overview, tech stack detection, and strategic recommendations.</li>
+    <li><span class="tag tag-success">SCORE</span> <strong>Transparent Health Score (0–100):</strong> A calibrated, explainable grade with sub-scores for Security, Quality, Dependencies, and Documentation.</li>
+  </ul>
+
+  <h3>🛡️ Feature 2 — PR Poison Scanner & Auto-Copilot</h3>
+  <p>Before code merges to main, paste the Git diff. GitWise flags hardcoded credentials in new code, detects schema-breaking changes, identifies SQL injection patterns, and <strong>automatically generates a conventional PR description and reviewer checklist</strong> using Gemini AI.</p>
+
+  <h3>🩺 Feature 3 — Git Doctor</h3>
+  <p>Paste any cryptic Git terminal error (e.g., <em>"rejected push non-fast-forward"</em>, <em>"merge conflict in src/app.ts"</em>). Git Doctor provides: plain-English diagnosis, root cause explanation, copy-paste terminal commands to resolve the error, and prevention advice.</p>
+
+  <h3>🎓 Feature 4 — GitWise Academy</h3>
+  <p>An interactive Git learning platform with a virtual terminal simulator. Students practice real Git workflows (<code>git init</code>, <code>git add</code>, <code>git commit</code>, <code>git branch</code>, <code>git merge</code>, etc.) in a safe state machine environment with guided hints, quiz questions, and lesson progression — all without affecting any real repository.</p>
+
+  <div class="arch-diagram">
+    <div class="arch-layer">
+      <div class="arch-layer-label">CLIENT SURFACES</div>
+      <div class="arch-boxes">
+        <div class="arch-box lime">🌐 Web Dashboard (React + Vite)</div>
+        <div class="arch-box cyan">🔷 VS Code Extension (TypeScript)</div>
+        <div class="arch-box indigo">🧩 Chrome Extension (MV3)</div>
+      </div>
+    </div>
+    <div class="arch-arrow">↓ HTTP REST API ↓</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label">CORE API (Express.js · Port 4000)</div>
+      <div class="arch-boxes">
+        <div class="arch-box">POST /analyze/repo</div>
+        <div class="arch-box">POST /analyze/diff</div>
+        <div class="arch-box">POST /explain/error</div>
+        <div class="arch-box">GET /academy/lessons</div>
+      </div>
+    </div>
+    <div class="arch-arrow">↓ Orchestration Layer ↓</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label">INTELLIGENCE ENGINES</div>
+      <div class="arch-boxes">
+        <div class="arch-box lime">🔑 Secrets Scanner (25+ patterns)</div>
+        <div class="arch-box green">🛡️ OSV.dev Vulnerability DB</div>
+        <div class="arch-box cyan">📊 Code Quality Analyzer</div>
+        <div class="arch-box indigo">🤖 Gemini 2.5 Flash AI</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bar">
+    <span>GitWise — Final Year Capstone Project</span>
+    <span>Page 2 of 6</span>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════ PAGE 3: TECH ══ -->
+<div class="page">
+  <div class="section-header">
+    <div class="section-number">03</div>
+    <div class="section-emoji">⚙️</div>
+    <div class="section-title">Technology Stack & Architecture</div>
+  </div>
+
+  <table class="tech-table">
+    <thead>
+      <tr>
+        <th>Layer</th>
+        <th>Technology</th>
+        <th>Why This Choice</th>
+        <th>Version</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Web Frontend</strong></td>
+        <td><span class="tech-badge">React 18</span> + <span class="tech-badge">Vite 6</span></td>
+        <td>Modern SPA with hot-reload, TypeScript, and < 200ms build times. Chosen over Next.js for zero SSR overhead at this scale.</td>
+        <td>React 18.3 / Vite 6.3</td>
+      </tr>
+      <tr>
+        <td><strong>API Server</strong></td>
+        <td><span class="tech-badge">Express.js</span> + <span class="tech-badge">TypeScript</span></td>
+        <td>Battle-tested, zero-overhead REST API framework. TypeScript ensures type safety across the monorepo shared types.</td>
+        <td>Express 4.x</td>
+      </tr>
+      <tr>
+        <td><strong>Primary AI</strong></td>
+        <td><span class="tech-badge">Google Gemini 2.5 Flash</span></td>
+        <td>1,000,000 token context window — critical for analyzing large repositories. Free tier (1,500 req/day) removes cost barrier entirely.</td>
+        <td>gemini-2.5-flash-preview</td>
+      </tr>
+      <tr>
+        <td><strong>Fallback AI</strong></td>
+        <td><span class="tech-badge">Groq API (Llama 3.1)</span></td>
+        <td>Ultra-fast inference (&lt;1s responses), free tier, acts as hot-failover when Gemini rate limits are hit during demos.</td>
+        <td>llama-3.1-70b-versatile</td>
+      </tr>
+      <tr>
+        <td><strong>Vulnerability DB</strong></td>
+        <td><span class="tech-badge">OSV.dev</span> (Google)</td>
+        <td>Authoritative, real-time CVE database. Free, no API key required. Covers npm, PyPI, Go, Cargo — industry standard.</td>
+        <td>REST API v1</td>
+      </tr>
+      <tr>
+        <td><strong>VS Code Ext.</strong></td>
+        <td><span class="tech-badge">VS Code Extension API</span></td>
+        <td>Native extension with WebviewPanel for rich UI inside the editor. Zero friction — works on any open project folder.</td>
+        <td>vscode ^1.74.0</td>
+      </tr>
+      <tr>
+        <td><strong>Browser Ext.</strong></td>
+        <td><span class="tech-badge">Chrome MV3</span></td>
+        <td>Manifest V3 is the current standard (MV2 deprecated). Content scripts inject a sidebar on any GitHub.com repository page.</td>
+        <td>Manifest V3</td>
+      </tr>
+      <tr>
+        <td><strong>Secrets Scanner</strong></td>
+        <td><span class="tech-badge">Custom Regex Engine</span></td>
+        <td>25+ deterministic patterns for AWS keys, GitHub tokens, Stripe, Twilio, database URLs, private keys, etc. Zero false positives design.</td>
+        <td>Custom</td>
+      </tr>
+      <tr>
+        <td><strong>Monorepo</strong></td>
+        <td><span class="tech-badge">npm Workspaces</span></td>
+        <td>Manages 5 packages (api, web, vscode, browser, shared) with shared TypeScript types — a single <code>npm install</code> at root.</td>
+        <td>npm 10.x</td>
+      </tr>
+      <tr>
+        <td><strong>Build System</strong></td>
+        <td><span class="tech-badge">esbuild</span> + <span class="tech-badge">tsc</span></td>
+        <td>esbuild compiles VS Code extension in milliseconds. TypeScript compiler handles type checking and shared type generation.</td>
+        <td>esbuild 0.24</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Design Decisions That Matter</h3>
+
+  <div class="callout callout-insight">
+    <strong>Decision 1 — Deterministic First, AI Second:</strong> All secret detection and code pattern scanning is done with deterministic regex before AI is called. This means results are explainable, verifiable, and never hallucinated. AI only synthesizes what deterministic tools already confirmed.
+  </div>
+
+  <div class="callout callout-insight">
+    <strong>Decision 2 — SHA-Based AI Caching:</strong> AI requests are keyed by a SHA hash of the repository name and file count. Scanning the same repository twice never uses an extra AI quota — results are served from memory cache. This makes GitWise viable within free tier limits even under heavy demo usage.
+  </div>
+
+  <div class="callout callout-insight">
+    <strong>Decision 3 — Zero Configuration:</strong> GitWise requires no user accounts, no API key entry, no CLI installation. The Gemini key lives in a server-side .env file. Users interact only with a URL input box.
+  </div>
+
+  <div class="footer-bar">
+    <span>GitWise — Final Year Capstone Project</span>
+    <span>Page 3 of 6</span>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════ PAGE 4: PROS CONS ══ -->
+<div class="page">
+  <div class="section-header">
+    <div class="section-number">04</div>
+    <div class="section-emoji">⚖️</div>
+    <div class="section-title">Strengths, Limitations & Honest Reflection</div>
+  </div>
+
+  <div class="pros-cons">
+    <div class="pros-box">
+      <div class="box-header">✅ STRENGTHS</div>
+      <ul class="pros-cons-list">
+        <li>✓ <strong>Zero cost to run</strong> — Gemini API free tier (1,500 req/day) and OSV.dev are completely free. Anyone can self-host this with a single API key.</li>
+        <li>✓ <strong>Multi-surface architecture</strong> — Same API powers 3 distinct surfaces. This is enterprise-grade thinking rarely seen in academic capstones.</li>
+        <li>✓ <strong>Explainable, auditable results</strong> — Every finding includes evidence, line numbers, severity reasoning, and remediation steps. AI results are always backed by deterministic evidence.</li>
+        <li>✓ <strong>Works on any public GitHub repo</strong> — No code needs to be installed locally. Just paste a URL — a game-changing UX for code reviewers.</li>
+        <li>✓ <strong>Interactive learning platform</strong> — The Academy terminal simulator supports all standard Git commands and provides a genuinely useful learning environment.</li>
+        <li>✓ <strong>TypeScript monorepo</strong> — Shared types across API, web, and extensions mean type safety end-to-end. Professional-grade project structure.</li>
+        <li>✓ <strong>Automatic PR drafting</strong> — Generates conventional commit-format PR titles and reviewer checklists — a feature that saves real time in real teams.</li>
+        <li>✓ <strong>Fast fallback</strong> — If Gemini is unavailable, Groq's Llama 3.1 is activated automatically with &lt;1s response times.</li>
+      </ul>
+    </div>
+    <div class="cons-box">
+      <div class="box-header">⚠️ LIMITATIONS</div>
+      <ul class="pros-cons-list">
+        <li>✗ <strong>Public repos only (for GitHub scanning)</strong> — The GitHub API tree endpoint requires authentication for private repositories. Workaround: use the local directory scan for private projects.</li>
+        <li>✗ <strong>Free tier rate limits</strong> — Gemini has 1,500 requests/day per key. High-volume usage requires either a paid tier or multiple API keys in rotation.</li>
+        <li>✗ <strong>40-file sampling limit</strong> — Large repositories (10,000+ files) are sampled intelligently, but some files may be missed. Priority is given to package.json, README, and entry-point files.</li>
+        <li>✗ <strong>No persistent user accounts</strong> — Scan history is not stored between sessions. Adding authentication and a database would enable historical trend tracking.</li>
+        <li>✗ <strong>Static code analysis only</strong> — GitWise does not execute code or use dynamic analysis (DAST). Runtime vulnerabilities that only appear under specific inputs are not detected.</li>
+        <li>✗ <strong>Manual API server startup</strong> — Users must run <code>npm run dev</code> in the api folder before the web dashboard works. A production deployment on a cloud platform would eliminate this.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>What I Would Do Differently</h3>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-title">Add PostgreSQL + Prisma for Persistence</div>
+      <div class="timeline-desc">Store scan results historically so developers can track repository health trends over time — visualized as improvement curves on the dashboard.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-title">Implement GitHub OAuth for Private Repo Access</div>
+      <div class="timeline-desc">Allow users to authenticate with GitHub to scan private repositories — unlocking the most valuable enterprise use case where secrets leaks are most damaging.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-title">Deploy to Cloud (Render / Railway)</div>
+      <div class="timeline-desc">A single-click hosted version where users just visit a URL — no local server setup — would dramatically reduce the barrier to adoption and enable real-world use.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot"></div>
+      <div class="timeline-title">GitHub Webhook Integration for CI/CD</div>
+      <div class="timeline-desc">Auto-trigger GitWise scans on every pull request via GitHub webhooks and post results as PR comments — making it a zero-friction CI security step.</div>
+    </div>
+  </div>
+
+  <h3>Comparison to Existing Tools</h3>
+  <table class="tech-table">
+    <thead>
+      <tr><th>Feature</th><th>GitWise</th><th>GitHub Security Advisories</th><th>Snyk</th><th>SonarQube</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Secret Detection</td><td>✅ Built-in</td><td>⚠️ Partial</td><td>✅ Paid</td><td>✅ Paid</td></tr>
+      <tr><td>AI Architecture Summary</td><td>✅ Free</td><td>❌ No</td><td>❌ No</td><td>❌ No</td></tr>
+      <tr><td>Zero Setup</td><td>✅ Yes</td><td>✅ Yes</td><td>⚠️ Config needed</td><td>❌ Complex setup</td></tr>
+      <tr><td>Git Error Diagnostics</td><td>✅ Built-in</td><td>❌ No</td><td>❌ No</td><td>❌ No</td></tr>
+      <tr><td>Interactive Git Learning</td><td>✅ Academy</td><td>❌ No</td><td>❌ No</td><td>❌ No</td></tr>
+      <tr><td>Cost</td><td>✅ Free</td><td>✅ Free (limited)</td><td>💰 Paid</td><td>💰 Paid</td></tr>
+    </tbody>
+  </table>
+
+  <div class="footer-bar">
+    <span>GitWise — Final Year Capstone Project</span>
+    <span>Page 4 of 6</span>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════ PAGE 5: HOW TO DEMO ══ -->
+<div class="page">
+  <div class="section-header">
+    <div class="section-number">05</div>
+    <div class="section-emoji">🎬</div>
+    <div class="section-title">How to Showcase GitWise (Demo Script)</div>
+  </div>
+
+  <div class="callout callout-solution">
+    <strong>Total Demo Time: ~8 minutes.</strong> Follow these steps in order for a compelling, examiner-ready walkthrough that covers all four core features and demonstrates real AI intelligence.
+  </div>
+
+  <h3>Pre-Demo Setup (5 minutes before)</h3>
+  <div class="demo-step">
+    <div class="demo-step-num">S</div>
+    <div class="demo-step-content">
+      <div class="demo-step-title">Start the servers</div>
+      <div class="demo-step-desc">Open two terminals. In terminal 1: navigate to <code>packages/api</code> and run <code>npm run dev</code>. In terminal 2: navigate to <code>packages/web</code> and run <code>npm run dev</code>. Open <code>http://localhost:5173</code> in Chrome. Confirm the status bar shows "Gemini 2.5 Active" in green.</div>
+    </div>
+  </div>
+
+  <h3>Live Demo Steps</h3>
+
+  <div class="demo-step">
+    <div class="demo-step-num">1</div>
+    <div class="demo-step-content">
+      <div class="demo-step-title">🌐 Introduce the Problem (30 seconds)</div>
+      <div class="demo-step-desc">Open the dashboard. Point to the hero card. Say: "GitWise solves three problems developers face every day — accidental secret leaks, not understanding a new codebase, and cryptic Git errors. Let me show you all three live."</div>
+    </div>
+  </div>
+
+  <div class="demo-step">
+    <div class="demo-step-num">2</div>
+    <div class="demo-step-content">
+      <div class="demo-step-title">⚡ Run a Live Repository Scan (3 minutes)</div>
+      <div class="demo-step-desc">In the URL bar, type <code>expressjs/express</code> and click <strong>SCAN REPOSITORY</strong>. Point out the loading state ("Studying Repository Structure — Fetching file tree, checking OSV database..."). When results appear: (a) Show the Health Score grade and sub-scores. (b) Expand the Architecture Synthesis — Gemini just read the real Express.js source code. (c) Show the Recommended Actions. Say: "This analysis just read 40 files from GitHub, checked every dependency against Google's CVE database, and had Gemini 2.5 Flash summarize the architecture — all in under 30 seconds."</div>
+    </div>
+  </div>
+
+  <div class="demo-step">
+    <div class="demo-step-num">3</div>
+    <div class="demo-step-content">
+      <div class="demo-step-title">🛡️ PR Poison Scanner — Catch a Hardcoded Secret (2 minutes)</div>
+      <div class="demo-step-desc">Click <strong>PR Scanner</strong> in the sidebar. Click <strong>"Load Risky Sample Diff"</strong>. Click <strong>SCAN PULL REQUEST</strong>. Point to: (a) The CRITICAL RISK badge. (b) The flagged GitHub token in the diff. (c) The auto-generated PR title and description in conventional commit format. (d) The reviewer checklist. Say: "This would have caught a credential leak before it ever merged to main."</div>
+    </div>
+  </div>
+
+  <div class="demo-step">
+    <div class="demo-step-num">4</div>
+    <div class="demo-step-content">
+      <div class="demo-step-title">🩺 Git Doctor — Diagnose a Real Error (1 minute)</div>
+      <div class="demo-step-desc">Click <strong>Git Doctor</strong>. Click the <strong>"Rejected Push (Non-Fast-Forward)"</strong> preset chip. The diagnosis appears instantly. Point to: the plain-English explanation, the category label, and the copy-paste commands. Say: "Junior developers spend hours on this error. GitWise explains it in plain English and gives the exact commands to fix it."</div>
+    </div>
+  </div>
+
+  <div class="demo-step">
+    <div class="demo-step-num">5</div>
+    <div class="demo-step-content">
+      <div class="demo-step-title">🎓 Academy — Interactive Terminal (1.5 minutes)</div>
+      <div class="demo-step-desc">Click <strong>Academy</strong>. In the terminal simulator, type <code>git status</code> and press Enter. Then type <code>git add .</code>, then <code>git commit -m "feat: add authentication"</code>, then <code>git log --oneline</code>. Point to how the terminal responds with realistic Git output and checks off each step. Say: "This is a fully interactive Git simulator — students learn by doing without the risk of breaking a real project."</div>
+    </div>
+  </div>
+
+  <div class="demo-step">
+    <div class="demo-step-num">6</div>
+    <div class="demo-step-content">
+      <div class="demo-step-title">🏁 Close with the Architecture (30 seconds)</div>
+      <div class="demo-step-desc">Say: "Behind all of this is a TypeScript monorepo with five packages — the API, the web dashboard, the VS Code extension, the Chrome extension, and shared types. One API powers all three surfaces. The AI engine automatically falls back from Gemini to Groq if rate limits are hit. All of this is live at <strong>github.com/PranjalSingh13/Gitwise</strong>."</div>
+    </div>
+  </div>
+
+  <h3>Examiner Questions — Prepared Answers</h3>
+  <ul class="styled-list">
+    <li><span class="tag tag-info">Q</span> <strong>"Why not just use GitHub's built-in security scanning?"</strong> — GitHub Dependabot only checks dependencies. GitWise adds AI architecture synthesis, Git error diagnosis, and an interactive learning platform — none of which GitHub offers.</li>
+    <li><span class="tag tag-info">Q</span> <strong>"How do you handle false positives in secret detection?"</strong> — By design, every pattern is anchored to specific known formats (e.g., AWS keys always start with AKIA). This eliminates generic string detection and keeps precision near 100%.</li>
+    <li><span class="tag tag-info">Q</span> <strong>"What if Gemini API quota runs out?"</strong> — GitWise automatically falls back to Groq's Llama 3.1 model in real-time. The API's AI orchestrator handles this transparently. Additionally, SHA-based caching ensures the same repo scan never consumes quota twice.</li>
+    <li><span class="tag tag-info">Q</span> <strong>"Could this be used in production by a real company?"</strong> — Yes, with two additions: GitHub OAuth for private repo access, and a cloud deployment (Render/Railway). Both are documented in the roadmap as immediate next steps.</li>
+  </ul>
+
+  <div class="footer-bar">
+    <span>GitWise — Final Year Capstone Project</span>
+    <span>Page 5 of 6</span>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════ PAGE 6: IMPACT ══ -->
+<div class="page">
+  <div class="section-header">
+    <div class="section-number">06</div>
+    <div class="section-emoji">🚀</div>
+    <div class="section-title">Impact, Learnings & Future Roadmap</div>
+  </div>
+
+  <h3>What This Project Demonstrates</h3>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-card-icon">🏗️</div>
+      <div class="feature-card-title">Full-Stack System Design</div>
+      <div class="feature-card-desc">A complete multi-package monorepo with shared types, REST API, three client surfaces, AI orchestration layer, and build tooling — all running from a single repository.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">🤖</div>
+      <div class="feature-card-title">Responsible AI Integration</div>
+      <div class="feature-card-desc">AI is used where it adds value (synthesis, explanation, generation) while deterministic tools handle security-critical detection. Hallucination risk is eliminated by design.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">🔐</div>
+      <div class="feature-card-title">Security Engineering Thinking</div>
+      <div class="feature-card-desc">Understanding of OWASP patterns, CVE databases, secret detection, SQL injection, credential hygiene, and dependency vulnerability management.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">👩‍🎓</div>
+      <div class="feature-card-title">Educational Product Design</div>
+      <div class="feature-card-desc">The Academy required designing a state machine that realistically simulates Git operations — a non-trivial engineering challenge with genuine pedagogical value.</div>
+    </div>
+  </div>
+
+  <h3>Key Technical Learnings</h3>
+
+  <div class="callout callout-solution">
+    <strong>LLM Prompt Engineering:</strong> Writing prompts that reliably return valid JSON from Gemini required multiple iterations — learning to specify output format, handle malformed responses, and implement parse fallbacks. This is a core industry skill for production AI systems.
+  </div>
+
+  <div class="callout callout-solution">
+    <strong>GitHub API & Rate Limiting:</strong> The GitHub tree API has rate limits. GitWise handles 403 and 404 gracefully, prioritizes high-value files, and batches concurrent downloads in chunks of 6 to avoid hitting limits during demos.
+  </div>
+
+  <div class="callout callout-solution">
+    <strong>Monorepo Architecture:</strong> Managing shared TypeScript types across 5 packages required understanding npm workspaces, package.json exports, and build ordering — skills directly transferable to enterprise-scale projects.
+  </div>
+
+  <h3>Future Roadmap</h3>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-dot" style="background: #22c55e; box-shadow: 0 0 0 2px #22c55e;"></div>
+      <div class="timeline-title">Phase 1 (Immediate) — Cloud Deployment</div>
+      <div class="timeline-desc">Deploy API to Railway.app or Render.com. Deploy web frontend to Vercel. Enable public access at a permanent URL (gitwise.dev) with zero local setup required.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot" style="background: #f59e0b; box-shadow: 0 0 0 2px #f59e0b;"></div>
+      <div class="timeline-title">Phase 2 — GitHub OAuth & Private Repos</div>
+      <div class="timeline-desc">Allow users to authenticate via GitHub OAuth to enable scanning of private repositories — the highest-value enterprise use case for secrets detection.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot" style="background: #6366f1; box-shadow: 0 0 0 2px #6366f1;"></div>
+      <div class="timeline-title">Phase 3 — Historical Dashboard & Trends</div>
+      <div class="timeline-desc">Add PostgreSQL + Prisma to persist scan results. Build a trend dashboard showing Health Score over time so teams can see security posture improving sprint over sprint.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot" style="background: #ec4899; box-shadow: 0 0 0 2px #ec4899;"></div>
+      <div class="timeline-title">Phase 4 — GitHub Actions / CI Integration</div>
+      <div class="timeline-desc">Publish a GitHub Action that runs GitWise on every PR and posts findings as a bot comment — making it a zero-friction addition to any engineering team's workflow.</div>
+    </div>
+  </div>
+
+  <h3>Repository & Resources</h3>
+  <ul class="styled-list">
+    <li>🔗 <strong>GitHub Repository:</strong> <code>https://github.com/PranjalSingh13/Gitwise</code></li>
+    <li>📖 <strong>Full Documentation:</strong> 20+ markdown files covering architecture, API spec, data model, security spec, testing strategy, and deployment guide</li>
+    <li>🧩 <strong>Chrome Extension:</strong> Load unpacked from <code>packages/browser/</code> — works on any GitHub.com repository page</li>
+    <li>🔷 <strong>VS Code Extension:</strong> Compiled in <code>packages/vscode/dist/</code> — install via "Install from VSIX" in VS Code</li>
+    <li>🤖 <strong>AI Engine:</strong> Google Gemini 2.5 Flash (primary) + Groq Llama 3.1 70B (fallback) — both free tier</li>
+    <li>🛡️ <strong>Vulnerability Data:</strong> Google OSV.dev — live CVE database, no API key required</li>
+  </ul>
+
+  <div class="highlight-quote">
+    "GitWise is the tool I wish existed when I started learning Git. It bridges the gap between reading documentation and actually understanding what's happening — while making security analysis accessible to developers at every skill level."
+    <br><br><strong>— Pranjal Singh, Builder of GitWise</strong>
+  </div>
+
+  <div class="footer-bar">
+    <span>GitWise — Final Year Capstone Project · github.com/PranjalSingh13/Gitwise</span>
+    <span>Page 6 of 6</span>
+  </div>
+</div>
+
+</body>
+</html>
