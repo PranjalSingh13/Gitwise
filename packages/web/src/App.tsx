@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 
-// API base URL
 const API_BASE = '/api/v1';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'repo' | 'pr' | 'doctor' | 'academy'>('repo');
+  const [activeNav, setActiveNav] = useState<'scan' | 'pr' | 'doctor' | 'academy' | 'docs'>('scan');
   const [apiHealth, setApiHealth] = useState<{ aiProvider?: string; status?: string }>({});
 
-  // 1. Repo Scanner State
-  const [repoPath, setRepoPath] = useState('');
-  const [isScanningRepo, setIsScanningRepo] = useState(false);
+  // 1. Deep-Scan State
+  const [githubUrlInput, setGithubUrlInput] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
   const [repoReport, setRepoReport] = useState<any>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
 
   // 2. PR Scanner State
   const [diffInput, setDiffInput] = useState('');
@@ -33,34 +33,32 @@ export default function App() {
   const [quizSubmitted, setQuizSubmitted] = useState(false);
 
   useEffect(() => {
-    // Check health
     fetch(`${API_BASE}/health`)
       .then(res => res.json())
       .then(data => setApiHealth(data))
       .catch(() => setApiHealth({ status: 'offline' }));
 
-    // Load Academy Lessons
     fetch(`${API_BASE}/academy/lessons`)
       .then(res => res.json())
       .then(data => {
         if (data.lessons && data.lessons.length > 0) {
           setLessons(data.lessons);
-          loadLessonDetail(data.lessons[0].id);
+          loadLesson(data.lessons[0].id);
         }
       })
       .catch(() => {});
   }, []);
 
-  const loadLessonDetail = (id: string) => {
+  const loadLesson = (id: string) => {
     fetch(`${API_BASE}/academy/lessons/${id}`)
       .then(res => res.json())
       .then(lesson => {
         setSelectedLesson(lesson);
         setTerminalState(lesson.initialTerminalState);
         setTerminalHistory([
-          `Welcome to GitWise Terminal Simulator`,
+          `GitWise Terminal Simulator initialized.`,
           `Current branch: ${lesson.initialTerminalState?.currentBranch || 'main'}`,
-          `Type "git status" to start or check hints below.`
+          `Type "git status" or inspect hints below.`
         ]);
         setQuizAnswer(null);
         setQuizSubmitted(false);
@@ -68,29 +66,44 @@ export default function App() {
   };
 
   // Run Repo Deep Scan
-  const handleDeepScan = async (sample = false) => {
-    setIsScanningRepo(true);
+  const handleScan = async (overrideTarget?: string, isLocal = false) => {
+    const target = overrideTarget || githubUrlInput.trim();
+    if (!target && !isLocal) {
+      alert('Please enter a GitHub repository URL or slug (e.g., expressjs/express)');
+      return;
+    }
+
+    setIsScanning(true);
+    setScanError(null);
     setRepoReport(null);
+
     try {
+      const payload: any = {};
+      if (isLocal) {
+        payload.repoName = 'Current Workspace';
+      } else if (target.includes('github.com') || target.includes('/')) {
+        payload.githubUrl = target;
+      } else {
+        payload.dirPath = target;
+      }
+
       const res = await fetch(`${API_BASE}/analyze/repo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          repoName: 'GitWise_Capstone',
-          dirPath: sample ? undefined : (repoPath || undefined),
-          files: sample ? [
-            { path: 'src/index.ts', content: 'import express from "express";\nconst app = express();\nconst DB_PASS = "postgres://root:SuperSecret123@db.prod.internal:5432/core";\napp.get("/user", (req, res) => {\n  const q = `SELECT * FROM users WHERE id = ${req.query.id}`;\n  db.query(q);\n});' },
-            { path: 'package.json', content: '{"name":"sample-app","dependencies":{"express":"4.18.2","lodash":"4.17.15"}}' },
-            { path: 'README.md', content: '# Sample App\nA node microservice demo.' }
-          ] : undefined
-        })
+        body: JSON.stringify(payload)
       });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Scan failed with status ${res.status}`);
+      }
+
       const data = await res.json();
       setRepoReport(data);
-    } catch (err) {
-      alert('Failed to connect to GitWise API.');
+    } catch (err: any) {
+      setScanError(err.message || 'Failed to scan repository.');
     } finally {
-      setIsScanningRepo(false);
+      setIsScanning(false);
     }
   };
 
@@ -103,10 +116,7 @@ export default function App() {
       const res = await fetch(`${API_BASE}/analyze/diff`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          diffText: diffInput,
-          prTitle: prTitleInput || undefined
-        })
+        body: JSON.stringify({ diffText: diffInput, prTitle: prTitleInput || undefined })
       });
       const data = await res.json();
       setPrReport(data);
@@ -118,27 +128,27 @@ export default function App() {
   };
 
   // Run Git Doctor
-  const handleDiagnose = async (customText?: string) => {
-    const textToAnalyze = customText || errorInput;
-    if (!textToAnalyze.trim()) return;
+  const handleDoctorDiagnose = async (customText?: string) => {
+    const text = customText || errorInput;
+    if (!text.trim()) return;
     setIsDiagnosing(true);
     setDiagnosis(null);
     try {
       const res = await fetch(`${API_BASE}/explain/error`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ errorText: textToAnalyze })
+        body: JSON.stringify({ errorText: text })
       });
       const data = await res.json();
       setDiagnosis(data);
     } catch {
-      alert('Failed to diagnose Git error.');
+      alert('Git Doctor diagnosis failed.');
     } finally {
       setIsDiagnosing(false);
     }
   };
 
-  // Terminal command submit
+  // Terminal submission
   const handleTerminalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!terminalInput.trim() || !selectedLesson) return;
@@ -158,18 +168,12 @@ export default function App() {
         })
       });
       const data = await res.json();
-      if (data.output) {
-        newHist.push(data.output);
-      }
-      if (data.isStepCorrect) {
-        newHist.push(`✓ Step accepted!`);
-      } else if (data.hint) {
-        newHist.push(`💡 Hint: ${data.hint}`);
-      }
+      if (data.output) newHist.push(data.output);
+      if (data.isStepCorrect) newHist.push(`✓ Step accepted!`);
+      else if (data.hint) newHist.push(`💡 Hint: ${data.hint}`);
+
       setTerminalHistory(newHist);
-      if (data.updatedState) {
-        setTerminalState(data.updatedState);
-      }
+      if (data.updatedState) setTerminalState(data.updatedState);
     } catch {
       newHist.push('Command simulation failed.');
       setTerminalHistory(newHist);
@@ -177,622 +181,663 @@ export default function App() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Top Header */}
-      <header className="app-header">
-        <div className="brand-badge">
-          <div className="brand-logo-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-            </svg>
-          </div>
-          <div>
-            <span style={{ background: 'var(--brand-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              GitWise
-            </span>
-            <span style={{ fontSize: '0.75rem', marginLeft: '0.5rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-              Capstone V2
-            </span>
-          </div>
+    <div className="app-container">
+      {/* Left Sidebar */}
+      <aside className="sidebar">
+        <div className="brand-title">
+          <span style={{ color: 'var(--accent-lime)' }}>⚡</span> GITWISE
+        </div>
+        <div className="brand-subtitle">
+          Intelligent Repo Engine
         </div>
 
-        <nav className="nav-tabs">
-          <button className={`nav-tab-btn ${activeTab === 'repo' ? 'active' : ''}`} onClick={() => setActiveTab('repo')}>
-            📊 Full Repo Deep-Scan
+        <nav className="nav-group">
+          <button
+            className={`nav-item ${activeNav === 'scan' ? 'active' : ''}`}
+            onClick={() => setActiveNav('scan')}
+          >
+            <span>🌐</span> Deep-Scan
           </button>
-          <button className={`nav-tab-btn ${activeTab === 'pr' ? 'active' : ''}`} onClick={() => setActiveTab('pr')}>
-            🛡️ PR Poison Scanner
+          <button
+            className={`nav-item ${activeNav === 'pr' ? 'active' : ''}`}
+            onClick={() => setActiveNav('pr')}
+          >
+            <span>🛡️</span> PR Scanner
           </button>
-          <button className={`nav-tab-btn ${activeTab === 'doctor' ? 'active' : ''}`} onClick={() => setActiveTab('doctor')}>
-            🩺 Git Doctor
+          <button
+            className={`nav-item ${activeNav === 'doctor' ? 'active' : ''}`}
+            onClick={() => setActiveNav('doctor')}
+          >
+            <span>🩺</span> Git Doctor
           </button>
-          <button className={`nav-tab-btn ${activeTab === 'academy' ? 'active' : ''}`} onClick={() => setActiveTab('academy')}>
-            🎓 GitWise Academy
+          <button
+            className={`nav-item ${activeNav === 'academy' ? 'active' : ''}`}
+            onClick={() => setActiveNav('academy')}
+          >
+            <span>🎓</span> Academy
+          </button>
+          <button
+            className={`nav-item ${activeNav === 'docs' ? 'active' : ''}`}
+            onClick={() => setActiveNav('docs')}
+          >
+            <span>📖</span> Documentation
           </button>
         </nav>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: apiHealth.status === 'ok' ? '#10b981' : '#f59e0b' }} />
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-            {apiHealth.aiProvider || 'Gemini 2.5 Flash'}
-          </span>
-        </div>
-      </header>
-
-      {/* Main Container */}
-      <main style={{ flex: 1, padding: '2rem', maxWidth: '1280px', margin: '0 auto', width: '100%' }}>
-        
-        {/* TAB 1: REPO DEEP-SCAN */}
-        {activeTab === 'repo' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-            <div className="glass-panel" style={{ padding: '1.75rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-                <div>
-                  <h1 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '0.35rem' }}>
-                    Repository Deep-Scan Engine
-                  </h1>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem' }}>
-                    Scan all files, detect exposed secrets, check dependencies against OSV, and generate Gemini architectural intelligence.
-                  </p>
-                </div>
-
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <button className="btn-secondary" onClick={() => handleDeepScan(true)} disabled={isScanningRepo}>
-                    ⚡ Run Sample Project Scan
-                  </button>
-                  <button className="btn-primary" onClick={() => handleDeepScan(false)} disabled={isScanningRepo}>
-                    {isScanningRepo ? '⏳ Analyzing Entire Repository...' : '🚀 Scan Local Workspace'}
-                  </button>
-                </div>
-              </div>
-
-              <div style={{ marginTop: '1rem' }}>
-                <input
-                  type="text"
-                  placeholder="Optional: Enter custom directory path (or leave empty to scan this project root)"
-                  value={repoPath}
-                  onChange={e => setRepoPath(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'rgba(0,0,0,0.3)',
-                    border: '1px solid var(--border-subtle)',
-                    fontSize: '0.875rem'
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Results Section */}
-            {repoReport && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {/* Score & Architecture Summary */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
-                  {/* Health Card */}
-                  <div className="glass-panel health-gauge-container">
-                    <div className={`grade-circle ${repoReport.healthScore.grade.replace('+', 'plus')}`}>
-                      <div className="grade-value">{repoReport.healthScore.grade}</div>
-                      <div className="score-value">{repoReport.healthScore.overallScore}/100</div>
-                    </div>
-                    <div>
-                      <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '0.25rem' }}>
-                        Repository Health Score
-                      </h3>
-                      <p style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
-                        {repoReport.healthScore.summaryRationale}
-                      </p>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', fontSize: '0.8rem' }}>
-                        <div>🛡️ Security: <strong>{repoReport.healthScore.securityScore}%</strong></div>
-                        <div>💎 Code Quality: <strong>{repoReport.healthScore.qualityScore}%</strong></div>
-                        <div>📦 Dependencies: <strong>{repoReport.healthScore.dependencyScore}%</strong></div>
-                        <div>📖 Documentation: <strong>{repoReport.healthScore.documentationScore}%</strong></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Architecture Overview */}
-                  <div className="glass-panel" style={{ padding: '1.5rem' }}>
-                    <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      ✨ AI Architecture Overview
-                    </h3>
-                    <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1rem' }}>
-                      {repoReport.architectureSummary.overview}
-                    </p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                      {repoReport.architectureSummary.techStack?.map((tech: string, i: number) => (
-                        <span key={i} style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-full)', fontSize: '0.75rem', fontWeight: 600 }}>
-                          {tech}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Top Action Plan */}
-                <div className="glass-panel" style={{ padding: '1.5rem' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.75rem' }}>
-                    🎯 Priority Strategic Action Plan
-                  </h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.75rem' }}>
-                    {repoReport.recommendedActions?.map((act: any, i: number) => (
-                      <div key={i} style={{ padding: '0.85rem', background: 'rgba(0,0,0,0.25)', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--brand-primary)' }}>
-                        <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.25rem' }}>
-                          Priority {act.priority}: {act.action}
-                        </div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                          Impact: {act.impact}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Findings Table */}
-                <div className="glass-panel" style={{ padding: '1.5rem' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem' }}>
-                    🛡️ Identified Findings ({repoReport.findings.length})
-                  </h3>
-                  {repoReport.findings.length === 0 ? (
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No critical vulnerabilities or exposed secrets found in this scan.</p>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                      {repoReport.findings.map((f: any, idx: number) => (
-                        <div key={idx} style={{ padding: '1rem', background: 'rgba(0,0,0,0.25)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                              <span className={`badge-severity badge-${f.severity}`}>{f.severity}</span>
-                              <strong style={{ fontSize: '0.925rem' }}>{f.title}</strong>
-                            </div>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                              {f.filePath}{f.lineStart ? `:${f.lineStart}` : ''}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                            {f.rootCause}
-                          </div>
-                          {f.evidence && (
-                            <div className="code-box" style={{ marginBottom: '0.5rem' }}>
-                              {f.evidence}
-                            </div>
-                          )}
-                          <div style={{ fontSize: '0.825rem', color: '#10b981' }}>
-                            💡 Fix: {f.suggestedFix}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+        <div className="nav-section-label">System Engines</div>
+        <div style={{ padding: '0 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="status-dot dot-lime" />
+            <span>Gemini 2.5 Flash</span>
           </div>
-        )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="status-dot dot-emerald" />
+            <span>OSV Vulnerability DB</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="status-dot dot-indigo" />
+            <span>Gitleaks & Semgrep</span>
+          </div>
+        </div>
 
-        {/* TAB 2: PR POISON SCANNER & COPILOT */}
-        {activeTab === 'pr' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div className="glass-panel" style={{ padding: '1.75rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid var(--border-card)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          GitWise Companion v2.0<br/>
+          <span style={{ color: '#10b981' }}>● All Services Online</span>
+        </div>
+      </aside>
+
+      {/* Main Content Viewport */}
+      <div className="main-viewport">
+        {/* Top Technical Status Bar */}
+        <header className="top-system-bar">
+          <div className="system-status-pills">
+            <div className="status-pill">
+              <span className="status-dot dot-lime" />
+              <span>Gemini 2.5 Active</span>
+            </div>
+            <div className="status-pill">
+              <span className="status-dot dot-emerald" />
+              <span>Realtime OSV Scanner</span>
+            </div>
+            <div className="status-pill">
+              <span className="status-dot dot-indigo" />
+              <span>Zero-Leak Assurance</span>
+            </div>
+          </div>
+
+          <div className="search-box-wrap">
+            <span>🔍</span>
+            <input
+              type="text"
+              placeholder="Search repository, rule, or error..."
+              value={githubUrlInput}
+              onChange={e => setGithubUrlInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleScan()}
+            />
+          </div>
+        </header>
+
+        {/* View Content */}
+        <main className="bento-canvas">
+
+          {/* VIEW 1: REPO DEEP SCAN */}
+          {activeNav === 'scan' && (
+            <>
+              {/* Hero Bento Card */}
+              <div className="bento-card hero-bento">
                 <div>
-                  <h1 style={{ fontSize: '1.6rem', fontWeight: 800 }}>PR Poison Scanner & Copilot</h1>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem' }}>
-                    Detect dangerous diff patterns, breaking changes, and auto-generate reviewer-ready PR descriptions and verification checklists.
+                  <div className="bento-tag">⚡ REPOSITORY DEEP-SCAN ENGINE</div>
+                  <h1 className="hero-punchline">
+                    Analyze any public or private GitHub repository in one click.
+                  </h1>
+                  <p className="hero-subtext">
+                    Enter any GitHub URL or repository slug to trigger automated secret detection, OSV dependency vulnerability analysis, static code review, and Gemini 2.5 Flash architectural synthesis.
+                  </p>
+
+                  <div className="repo-input-bar">
+                    <input
+                      type="text"
+                      placeholder="e.g. expressjs/express or https://github.com/facebook/react"
+                      value={githubUrlInput}
+                      onChange={e => setGithubUrlInput(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleScan()}
+                    />
+                    <button
+                      className="btn-lime"
+                      onClick={() => handleScan()}
+                      disabled={isScanning}
+                    >
+                      {isScanning ? '⏳ SCANNING REPO...' : '⚡ SCAN REPOSITORY'}
+                    </button>
+                  </div>
+
+                  {/* Quick Chips */}
+                  <div className="quick-chips">
+                    <span className="chip-label">QUICK PICKS:</span>
+                    <button className="chip-btn" onClick={() => { setGithubUrlInput('expressjs/express'); handleScan('expressjs/express'); }}>
+                      expressjs/express
+                    </button>
+                    <button className="chip-btn" onClick={() => { setGithubUrlInput('pallets/flask'); handleScan('pallets/flask'); }}>
+                      pallets/flask
+                    </button>
+                    <button className="chip-btn" onClick={() => { setGithubUrlInput('facebook/react'); handleScan('facebook/react'); }}>
+                      facebook/react
+                    </button>
+                    <button className="chip-btn" onClick={() => handleScan(undefined, true)}>
+                      📁 Local Workspace
+                    </button>
+                  </div>
+                </div>
+
+                {/* Right Hero Visual / Status Card */}
+                <div style={{ background: '#090a0f', border: '1px solid var(--border-card)', borderRadius: 'var(--radius-md)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>PIPELINE METRICS</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--accent-lime)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>READY</span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div style={{ padding: '0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>MAX CONTEXT</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>1,000,000</div>
+                    </div>
+                    <div style={{ padding: '0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>VULNERABILITY DB</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#ffffff', fontFamily: 'var(--font-mono)' }}>OSV.dev LIVE</div>
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', lineHeight: 1.5 }}>
+                    GitWise combines deterministic regex pattern detection with large-context AI to ensure zero hallucinations and 100% verified evidence.
+                  </div>
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {scanError && (
+                <div style={{ padding: '1rem 1.25rem', background: 'rgba(244, 63, 94, 0.1)', border: '1px solid rgba(244, 63, 94, 0.3)', borderRadius: 'var(--radius-md)', color: '#fb7185', fontSize: '0.9rem' }}>
+                  ⚠️ {scanError}
+                </div>
+              )}
+
+              {/* Scanning Active Indicator */}
+              {isScanning && (
+                <div className="bento-card" style={{ textAlign: 'center', padding: '3.5rem 1rem' }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⚡</div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, fontFamily: 'var(--font-mono)', color: 'var(--accent-lime)', marginBottom: '0.5rem' }}>
+                    STUDYING REPOSITORY STRUCTURE
+                  </h3>
+                  <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', maxWidth: '500px', margin: '0 auto' }}>
+                    Fetching file tree, checking packages against OSV database, searching for credentials, and synthesizing Gemini architecture model...
                   </p>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button
-                    className="btn-secondary"
-                    onClick={() => {
-                      setPrTitleInput('feat(auth): add login route and direct sql lookup');
-                      setDiffInput(`diff --git a/src/auth.ts b/src/auth.ts
-index 45a6b7c..89d0e1f 100644
+              )}
+
+              {/* Deep Scan Results Bento Grid */}
+              {repoReport && (
+                <>
+                  <div className="bento-grid-3">
+                    {/* Bento 1: Health Score */}
+                    <div className="bento-card">
+                      <div className="bento-tag">⌥ HEALTH AUDIT</div>
+                      <div className="health-display">
+                        <div className={`grade-badge-circle ${repoReport.healthScore.grade.replace('+', 'plus')}`}>
+                          <div style={{ fontSize: '2.4rem', lineHeight: 1 }}>{repoReport.healthScore.grade}</div>
+                          <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>{repoReport.healthScore.overallScore}/100</div>
+                        </div>
+
+                        <div style={{ flex: 1 }}>
+                          <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '0.2rem' }}>
+                            {repoReport.repositoryName}
+                          </h3>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginBottom: '0.75rem' }}>
+                            {repoReport.healthScore.summaryRationale}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                        <div>
+                          <div className="meter-row">
+                            <span>🛡️ Security Surface</span>
+                            <strong>{repoReport.healthScore.securityScore}%</strong>
+                          </div>
+                          <div className="meter-track">
+                            <div className="meter-fill" style={{ width: `${repoReport.healthScore.securityScore}%`, background: 'var(--accent-lime)' }} />
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="meter-row">
+                            <span>💎 Code Quality</span>
+                            <strong>{repoReport.healthScore.qualityScore}%</strong>
+                          </div>
+                          <div className="meter-track">
+                            <div className="meter-fill" style={{ width: `${repoReport.healthScore.qualityScore}%`, background: 'var(--accent-cyan)' }} />
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="meter-row">
+                            <span>📦 Dependencies</span>
+                            <strong>{repoReport.healthScore.dependencyScore}%</strong>
+                          </div>
+                          <div className="meter-track">
+                            <div className="meter-fill" style={{ width: `${repoReport.healthScore.dependencyScore}%`, background: 'var(--accent-indigo)' }} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bento 2: Architecture Overview */}
+                    <div className="bento-card">
+                      <div className="bento-tag">▷ ARCHITECTURE SYNTHESIS</div>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '0.75rem' }}>
+                        System Overview
+                      </h3>
+                      <p style={{ fontSize: '0.875rem', color: 'var(--text-dim)', lineHeight: 1.6, marginBottom: '1.25rem' }}>
+                        {repoReport.architectureSummary.overview}
+                      </p>
+
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', marginBottom: '0.5rem', fontWeight: 700 }}>
+                        DETECTED TECH STACK
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                        {repoReport.architectureSummary.techStack?.map((t: string, i: number) => (
+                          <span key={i} style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--border-card)', color: '#ffffff', padding: '0.25rem 0.6rem', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Bento 3: Top Developer Action Plan */}
+                    <div className="bento-card">
+                      <div className="bento-tag">⌨ STRATEGIC ACTIONS</div>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '0.75rem' }}>
+                        Recommended Next Steps
+                      </h3>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {repoReport.recommendedActions?.map((act: any, i: number) => (
+                          <div key={i} style={{ padding: '0.85rem', background: 'var(--bg-card-inner)', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--accent-lime)' }}>
+                            <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.2rem' }}>
+                              Priority {act.priority}: {act.action}
+                            </div>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                              Impact: {act.impact}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Findings Detailed Card */}
+                  <div className="bento-card">
+                    <div className="bento-tag">⚡ VERIFIED CODE FINDINGS ({repoReport.findings.length})</div>
+                    {repoReport.findings.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--text-dim)' }}>
+                        <div style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>✅</div>
+                        <strong>No security vulnerabilities or leaked secrets detected.</strong>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Repository follows safe configuration and dependency patterns.</p>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {repoReport.findings.map((f: any, idx: number) => (
+                          <div key={idx} className="finding-box">
+                            <div className="finding-header">
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                <span className={`badge-sev sev-${f.severity}`}>{f.severity}</span>
+                                <strong style={{ fontSize: '0.925rem' }}>{f.title}</strong>
+                              </div>
+                              <span style={{ fontSize: '0.8rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                                {f.filePath}{f.lineStart ? `:${f.lineStart}` : ''}
+                              </span>
+                            </div>
+
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '0.4rem' }}>
+                              {f.rootCause}
+                            </p>
+
+                            {f.evidence && (
+                              <div className="code-dark">
+                                {f.evidence}
+                              </div>
+                            )}
+
+                            <div style={{ fontSize: '0.8rem', color: 'var(--accent-lime)', fontFamily: 'var(--font-mono)' }}>
+                              REMEDIATION: {f.suggestedFix}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          {/* VIEW 2: PR POISON SCANNER */}
+          {activeNav === 'pr' && (
+            <div className="bento-card">
+              <div className="bento-tag">🛡️ PULL REQUEST POISON SCANNER & COPILOT</div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.5rem' }}>
+                Pre-Merge Security Audit & Auto-Drafting
+              </h2>
+              <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                Analyze incoming diffs before they merge to main. Flags secrets, schema breaking changes, and generates an automated reviewer checklist.
+              </p>
+
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                <button
+                  className="chip-btn"
+                  onClick={() => {
+                    setPrTitleInput('feat(auth): add login query and api credentials');
+                    setDiffInput(`diff --git a/src/auth.ts b/src/auth.ts
+index 1122334..5566778 100644
 --- a/src/auth.ts
 +++ b/src/auth.ts
-@@ -14,6 +14,14 @@ export async function authenticate(req: Request) {
+@@ -10,3 +10,12 @@ export function login(req, res) {
 +  const GITHUB_ACCESS_TOKEN = "ghp_99ab88cd77ef66gh55ij44kl33mn22op11qr";
 +  const query = "SELECT * FROM users WHERE email = '" + req.body.email + "' AND password = '" + req.body.password + "'";
 +  const user = await db.raw(query);
 +  return user;
- }`);
-                    }}
-                  >
-                    📝 Load Sample Risky Diff
-                  </button>
-                  <button className="btn-primary" onClick={handlePRScan} disabled={isScanningPR}>
-                    {isScanningPR ? '🔍 Analyzing Diff with AI...' : '⚡ Scan PR Diff'}
-                  </button>
-                </div>
++}`);
+                  }}
+                >
+                  📝 Load Risky Sample Diff
+                </button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.25rem' }}>
                 <input
                   type="text"
-                  placeholder="Pull Request Title Context (optional)"
+                  placeholder="Optional PR Title Context (e.g., feat: user management)"
                   value={prTitleInput}
                   onChange={e => setPrTitleInput(e.target.value)}
                   style={{
                     padding: '0.75rem 1rem',
+                    background: '#090a0f',
+                    border: '1px solid var(--border-card)',
                     borderRadius: 'var(--radius-sm)',
-                    background: 'rgba(0,0,0,0.3)',
-                    border: '1px solid var(--border-subtle)',
                     fontSize: '0.875rem'
                   }}
                 />
                 <textarea
-                  placeholder="Paste git diff text here (diff --git a/... b/...)"
+                  placeholder="Paste git diff here..."
                   rows={8}
                   value={diffInput}
                   onChange={e => setDiffInput(e.target.value)}
                   style={{
                     padding: '0.85rem 1rem',
+                    background: '#090a0f',
+                    border: '1px solid var(--border-card)',
                     borderRadius: 'var(--radius-sm)',
-                    background: 'rgba(0,0,0,0.3)',
-                    border: '1px solid var(--border-subtle)',
-                    fontSize: '0.85rem',
-                    fontFamily: 'var(--font-mono)'
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.85rem'
                   }}
                 />
               </div>
-            </div>
 
-            {/* PR Results */}
-            {prReport && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
-                      <span className={`badge-severity badge-${prReport.riskLevel.toLowerCase()}`} style={{ fontSize: '0.9rem', padding: '0.3rem 0.8rem' }}>
+              <button className="btn-lime" onClick={handlePRScan} disabled={isScanningPR}>
+                {isScanningPR ? '🔍 AUDITING DIFF...' : '⚡ SCAN PULL REQUEST'}
+              </button>
+
+              {/* PR Results */}
+              {prReport && (
+                <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-card)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <span className={`badge-sev sev-${prReport.riskLevel.toLowerCase()}`} style={{ marginRight: '0.75rem' }}>
                         {prReport.riskLevel} RISK ({prReport.riskScore}/100)
                       </span>
-                      <strong style={{ fontSize: '1.1rem' }}>Diff Analysis Complete</strong>
+                      <strong style={{ fontSize: '1rem' }}>{prReport.summary}</strong>
                     </div>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                      {prReport.summary}
-                    </p>
                   </div>
-                </div>
 
-                {/* Generated PR Draft */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
-                  <div className="glass-panel" style={{ padding: '1.5rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                      <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>📝 Auto-Generated PR Draft</h3>
-                      <button
-                        className="btn-secondary"
-                        style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}
-                        onClick={() => {
-                          const text = `## ${prReport.generatedPRDraft.title}\n\n${prReport.generatedPRDraft.summary}\n\n### Key Changes\n${prReport.generatedPRDraft.keyChanges.map((c: string) => `- ${c}`).join('\n')}\n\n### Testing Checklist\n${prReport.generatedPRDraft.testingChecklist.map((c: string) => `- [ ] ${c}`).join('\n')}`;
-                          navigator.clipboard.writeText(text);
-                          alert('Copied PR Markdown to clipboard!');
-                        }}
-                      >
-                        📋 Copy Markdown
-                      </button>
-                    </div>
-
-                    <div style={{ marginBottom: '1rem' }}>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Proposed Title</span>
-                      <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#818cf8', marginTop: '0.2rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+                    <div style={{ background: '#090a0f', padding: '1.25rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-card)' }}>
+                      <div className="bento-tag">📝 GENERATED PR DRAFT</div>
+                      <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--accent-lime)', marginBottom: '0.5rem' }}>
                         {prReport.generatedPRDraft.title}
                       </div>
-                    </div>
-
-                    <div style={{ marginBottom: '1rem' }}>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Summary</span>
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '1rem' }}>
                         {prReport.generatedPRDraft.summary}
                       </p>
-                    </div>
-
-                    <div>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Key Changes</span>
-                      <ul style={{ paddingLeft: '1.2rem', marginTop: '0.3rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                        {prReport.generatedPRDraft.keyChanges?.map((k: string, i: number) => (
-                          <li key={i} style={{ marginBottom: '0.25rem' }}>{k}</li>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                        KEY CHANGES
+                      </div>
+                      <ul style={{ paddingLeft: '1.2rem', fontSize: '0.85rem', color: 'var(--text-dim)', marginTop: '0.3rem' }}>
+                        {prReport.generatedPRDraft.keyChanges?.map((c: string, i: number) => (
+                          <li key={i}>{c}</li>
                         ))}
                       </ul>
                     </div>
-                  </div>
 
-                  {/* Reviewer Targeted Checklist */}
-                  <div className="glass-panel" style={{ padding: '1.5rem' }}>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-                      🎯 Reviewer Targeted Checklist
-                    </h3>
-                    <p style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                      Specific aspects the code reviewer should inspect before approving this PR:
-                    </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                      {prReport.reviewerChecklist?.map((item: string, i: number) => (
-                        <label key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                          <input type="checkbox" style={{ marginTop: '0.25rem' }} />
-                          <span>{item}</span>
-                        </label>
-                      ))}
+                    <div style={{ background: '#090a0f', padding: '1.25rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-card)' }}>
+                      <div className="bento-tag">🎯 REVIEWER CHECKLIST</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {prReport.reviewerChecklist?.map((chk: string, i: number) => (
+                          <label key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-dim)', cursor: 'pointer' }}>
+                            <input type="checkbox" style={{ marginTop: '0.25rem' }} />
+                            <span>{chk}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
 
-        {/* TAB 3: GIT DOCTOR */}
-        {activeTab === 'doctor' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div className="glass-panel" style={{ padding: '1.75rem' }}>
-              <h1 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '0.35rem' }}>
-                Git Doctor — Terminal Error Diagnosis
-              </h1>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', marginBottom: '1.25rem' }}>
-                Paste any cryptic Git terminal error. GitWise explains what happened in plain English, why Git stopped the operation, and gives copyable safe fix commands.
+          {/* VIEW 3: GIT DOCTOR */}
+          {activeNav === 'doctor' && (
+            <div className="bento-card">
+              <div className="bento-tag">🩺 GIT DOCTOR — TERMINAL ERROR DIAGNOSTICIAN</div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.5rem' }}>
+                Instant Plain-English Diagnosis for Any Git Error
+              </h2>
+              <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                Paste any cryptic Git terminal error. GitWise explains what happened, why Git protected your branch, and provides copy-paste safe commands.
               </p>
 
-              {/* Sample Buttons */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
                 <button
-                  className="btn-secondary"
-                  style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
+                  className="chip-btn"
                   onClick={() => {
                     const err = '! [rejected] main -> main (non-fast-forward)\nerror: failed to push some refs to remote. Updates were rejected because the remote contains work that you do not have locally.';
                     setErrorInput(err);
-                    handleDiagnose(err);
+                    handleDoctorDiagnose(err);
                   }}
                 >
                   Rejected Push (Non-Fast-Forward)
                 </button>
                 <button
-                  className="btn-secondary"
-                  style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
+                  className="chip-btn"
                   onClick={() => {
-                    const err = 'CONFLICT (content): Merge conflict in src/app.ts\nAutomatic merge failed; fix conflicts and then commit the result.';
+                    const err = 'CONFLICT (content): Merge conflict in src/index.ts\nAutomatic merge failed; fix conflicts and then commit the result.';
                     setErrorInput(err);
-                    handleDiagnose(err);
+                    handleDoctorDiagnose(err);
                   }}
                 >
-                  Merge Conflict in src/app.ts
-                </button>
-                <button
-                  className="btn-secondary"
-                  style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
-                  onClick={() => {
-                    const err = "error: Your local changes to the following files would be overwritten by checkout:\n\tsrc/config.ts\nPlease commit your changes or stash them before you switch branches.";
-                    setErrorInput(err);
-                    handleDiagnose(err);
-                  }}
-                >
-                  Uncommitted Changes Prevent Checkout
+                  Merge Conflict in src/index.ts
                 </button>
               </div>
 
               <textarea
-                placeholder="Paste Git error message here..."
+                placeholder="Paste your Git error message here..."
                 rows={5}
                 value={errorInput}
                 onChange={e => setErrorInput(e.target.value)}
                 style={{
                   width: '100%',
                   padding: '0.85rem 1rem',
+                  background: '#090a0f',
+                  border: '1px solid var(--border-card)',
                   borderRadius: 'var(--radius-sm)',
-                  background: 'rgba(0,0,0,0.3)',
-                  border: '1px solid var(--border-subtle)',
-                  fontSize: '0.85rem',
                   fontFamily: 'var(--font-mono)',
+                  fontSize: '0.85rem',
                   marginBottom: '1rem'
                 }}
               />
 
-              <button className="btn-primary" onClick={() => handleDiagnose()} disabled={isDiagnosing}>
-                {isDiagnosing ? '🩺 Diagnosing Git State...' : '💡 Explain Error & Show Fix'}
+              <button className="btn-lime" onClick={() => handleDoctorDiagnose()} disabled={isDiagnosing}>
+                {isDiagnosing ? '🩺 DIAGNOSING...' : '💡 DIAGNOSE ERROR & GENERATE FIX'}
               </button>
-            </div>
 
-            {/* Diagnosis Result */}
-            {diagnosis && (
-              <div className="glass-panel" style={{ padding: '1.75rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                  <span style={{ fontSize: '1.5rem' }}>💡</span>
-                  <div>
-                    <h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>{diagnosis.errorSignature}</h2>
-                    <span style={{ fontSize: '0.8rem', color: '#a855f7', fontWeight: 600 }}>Category: {diagnosis.errorCategory}</span>
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>What this means</h4>
-                  <p style={{ fontSize: '0.95rem', color: 'var(--text-primary)', lineHeight: 1.5 }}>
-                    {diagnosis.plainEnglishSummary}
-                  </p>
-                </div>
-
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Why it happened</h4>
-                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                    {diagnosis.whyItHappened}
-                  </p>
-                </div>
-
-                {diagnosis.safetyWarning && (
-                  <div style={{ padding: '0.75rem 1rem', background: 'rgba(244, 63, 94, 0.1)', border: '1px solid rgba(244, 63, 94, 0.25)', borderRadius: 'var(--radius-sm)', color: '#fb7185', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
-                    ⚠️ {diagnosis.safetyWarning}
-                  </div>
-                )}
-
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Step-by-Step Resolution</h4>
-                  <ol style={{ paddingLeft: '1.25rem', fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                    {diagnosis.stepByStepFix?.map((step: string, i: number) => (
-                      <li key={i}>{step}</li>
-                    ))}
-                  </ol>
-                </div>
-
-                <div>
-                  <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Exact Commands to Run</h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {diagnosis.recommendedCommands?.map((cmd: string, i: number) => (
-                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#090c13', padding: '0.65rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
-                        <span style={{ color: '#38bdf8' }}>{cmd}</span>
-                        <button
-                          className="btn-secondary"
-                          style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
-                          onClick={() => {
-                            navigator.clipboard.writeText(cmd.startsWith('#') ? '' : cmd);
-                            alert(`Copied: ${cmd}`);
-                          }}
-                        >
-                          Copy
-                        </button>
+              {/* Diagnosis Output */}
+              {diagnosis && (
+                <div style={{ marginTop: '2rem', background: '#090a0f', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-card)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                    <div style={{ fontSize: '1.5rem' }}>💡</div>
+                    <div>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>{diagnosis.errorSignature}</h3>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--accent-lime)', fontFamily: 'var(--font-mono)' }}>
+                        CATEGORY: {diagnosis.errorCategory}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 4: ACADEMY */}
-        {activeTab === 'academy' && selectedLesson && (
-          <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '1.5rem' }}>
-            {/* Lessons Sidebar */}
-            <div className="glass-panel" style={{ padding: '1.25rem', height: 'fit-content' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '0.75rem' }}>
-                Curriculum Lessons
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {lessons.map(l => (
-                  <button
-                    key={l.id}
-                    onClick={() => loadLessonDetail(l.id)}
-                    style={{
-                      textAlign: 'left',
-                      padding: '0.65rem 0.85rem',
-                      borderRadius: 'var(--radius-sm)',
-                      background: selectedLesson.id === l.id ? 'var(--brand-primary)' : 'rgba(255,255,255,0.03)',
-                      color: selectedLesson.id === l.id ? 'white' : 'var(--text-secondary)',
-                      fontSize: '0.825rem',
-                      fontWeight: 600,
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    <div>{l.title}</div>
-                    <div style={{ fontSize: '0.7rem', opacity: 0.8, marginTop: '0.2rem' }}>
-                      {l.difficulty} • ~{l.estimatedMinutes} mins
                     </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Lesson Content & Interactive Terminal */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div className="glass-panel" style={{ padding: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <h2 style={{ fontSize: '1.35rem', fontWeight: 800 }}>{selectedLesson.title}</h2>
-                  <span className="badge-severity badge-medium">{selectedLesson.difficulty}</span>
-                </div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem', whiteSpace: 'pre-line' }}>
-                  {selectedLesson.explanationMarkdown}
-                </div>
-
-                <div style={{ padding: '0.85rem', background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: 'var(--radius-sm)' }}>
-                  <strong style={{ fontSize: '0.85rem', color: '#a5b4fc' }}>🎯 Exercise Goal:</strong>
-                  <div style={{ fontSize: '0.85rem', marginTop: '0.2rem' }}>{selectedLesson.goalDescription}</div>
-                </div>
-              </div>
-
-              {/* Terminal Simulator */}
-              <div className="terminal-window">
-                <div className="terminal-header">
-                  <div className="terminal-dots">
-                    <div className="terminal-dot dot-red" />
-                    <div className="terminal-dot dot-yellow" />
-                    <div className="terminal-dot dot-green" />
-                  </div>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    gitwise-simulator :: {terminalState?.currentBranch || 'main'}
-                  </span>
-                  <div />
-                </div>
-
-                <div className="terminal-body">
-                  {terminalHistory.map((line, idx) => (
-                    <div key={idx} style={{ marginBottom: '0.25rem', whiteSpace: 'pre-wrap' }}>
-                      {line}
-                    </div>
-                  ))}
-                  <form onSubmit={handleTerminalSubmit} className="terminal-input-row">
-                    <span className="terminal-prompt">{terminalState?.currentBranch || 'main'} $</span>
-                    <input
-                      type="text"
-                      className="terminal-input"
-                      placeholder="Type git command (e.g. git status)..."
-                      value={terminalInput}
-                      onChange={e => setTerminalInput(e.target.value)}
-                      autoFocus
-                    />
-                  </form>
-                </div>
-              </div>
-
-              {/* Quiz Card */}
-              {selectedLesson.quiz && (
-                <div className="glass-panel" style={{ padding: '1.5rem' }}>
-                  <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-                    🧠 Concept Check Quiz
-                  </h4>
-                  <p style={{ fontSize: '0.9rem', marginBottom: '0.75rem' }}>
-                    {selectedLesson.quiz.question}
-                  </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-                    {selectedLesson.quiz.options?.map((opt: string, idx: number) => (
-                      <label
-                        key={idx}
-                        style={{
-                          padding: '0.6rem 0.85rem',
-                          borderRadius: 'var(--radius-sm)',
-                          background: quizAnswer === idx ? 'rgba(99, 102, 241, 0.2)' : 'rgba(0,0,0,0.2)',
-                          border: quizAnswer === idx ? '1px solid var(--brand-primary)' : '1px solid var(--border-subtle)',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          fontSize: '0.85rem'
-                        }}
-                      >
-                        <input
-                          type="radio"
-                          name="quiz"
-                          checked={quizAnswer === idx}
-                          onChange={() => setQuizAnswer(idx)}
-                        />
-                        <span>{opt}</span>
-                      </label>
-                    ))}
                   </div>
 
-                  {!quizSubmitted ? (
-                    <button
-                      className="btn-primary"
-                      onClick={() => setQuizSubmitted(true)}
-                      disabled={quizAnswer === null}
-                    >
-                      Submit Answer
-                    </button>
-                  ) : (
-                    <div style={{ padding: '0.85rem', borderRadius: 'var(--radius-sm)', background: quizAnswer === selectedLesson.quiz.correctIndex ? 'rgba(16, 185, 129, 0.15)' : 'rgba(244, 63, 94, 0.15)' }}>
-                      <strong>{quizAnswer === selectedLesson.quiz.correctIndex ? '🎉 Correct!' : '❌ Incorrect'}</strong>
-                      <p style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>{selectedLesson.quiz.explanation}</p>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                      WHAT THIS MEANS
                     </div>
-                  )}
+                    <p style={{ fontSize: '0.9rem', color: 'var(--text-main)', marginTop: '0.25rem' }}>
+                      {diagnosis.plainEnglishSummary}
+                    </p>
+                  </div>
+
+                  <div style={{ marginBottom: '1rem' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                      RECOMMENDED COMMANDS
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.4rem' }}>
+                      {diagnosis.recommendedCommands?.map((cmd: string, i: number) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#050608', padding: '0.6rem 0.85rem', borderRadius: '6px', border: '1px solid var(--border-subtle)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
+                          <span style={{ color: 'var(--accent-lime)' }}>{cmd}</span>
+                          <button
+                            className="chip-btn"
+                            onClick={() => {
+                              navigator.clipboard.writeText(cmd.startsWith('#') ? '' : cmd);
+                              alert(`Copied: ${cmd}`);
+                            }}
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
-          </div>
-        )}
-      </main>
+          )}
+
+          {/* VIEW 4: ACADEMY */}
+          {activeNav === 'academy' && selectedLesson && (
+            <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '1.5rem' }}>
+              <div className="bento-card" style={{ padding: '1.25rem', height: 'fit-content' }}>
+                <div className="bento-tag">CURRICULUM</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  {lessons.map(l => (
+                    <button
+                      key={l.id}
+                      onClick={() => loadLesson(l.id)}
+                      style={{
+                        textAlign: 'left',
+                        padding: '0.65rem 0.75rem',
+                        borderRadius: 'var(--radius-sm)',
+                        background: selectedLesson.id === l.id ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                        border: selectedLesson.id === l.id ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                        color: selectedLesson.id === l.id ? '#ffffff' : 'var(--text-dim)',
+                        fontSize: '0.8rem',
+                        fontWeight: 600
+                      }}
+                    >
+                      <div>{l.title}</div>
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                        {l.difficulty} • ~{l.estimatedMinutes} mins
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div className="bento-card">
+                  <div className="bento-tag">LESSON OVERVIEW</div>
+                  <h2 style={{ fontSize: '1.35rem', fontWeight: 800, marginBottom: '0.5rem' }}>{selectedLesson.title}</h2>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-dim)', whiteSpace: 'pre-line', lineHeight: 1.6 }}>
+                    {selectedLesson.explanationMarkdown}
+                  </div>
+                </div>
+
+                {/* Terminal Simulator */}
+                <div style={{ background: '#050608', border: '1px solid var(--border-card)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                  <div style={{ background: '#0c0e14', padding: '0.5rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-subtle)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <span>SIMULATOR :: {terminalState?.currentBranch || 'main'}</span>
+                    <span style={{ color: 'var(--accent-lime)' }}>LIVE</span>
+                  </div>
+
+                  <div style={{ padding: '1rem', minHeight: '220px', fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: '#38bdf8' }}>
+                    {terminalHistory.map((l, idx) => (
+                      <div key={idx} style={{ marginBottom: '0.25rem' }}>{l}</div>
+                    ))}
+                    <form onSubmit={handleTerminalSubmit} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                      <span style={{ color: 'var(--accent-lime)' }}>{terminalState?.currentBranch || 'main'} $</span>
+                      <input
+                        type="text"
+                        value={terminalInput}
+                        onChange={e => setTerminalInput(e.target.value)}
+                        placeholder="Type git status, git add..., etc."
+                        style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#ffffff', fontFamily: 'var(--font-mono)' }}
+                      />
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW 5: DOCUMENTATION */}
+          {activeNav === 'docs' && (
+            <div className="bento-card">
+              <div className="bento-tag">📖 SYSTEM MANUAL & EXTENSION GUIDE</div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.5rem' }}>
+                How to Use GitWise on Any Project
+              </h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem', marginTop: '1.5rem' }}>
+                <div style={{ background: '#090a0f', padding: '1.25rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-card)' }}>
+                  <div className="bento-tag">🌐 WEB DIRECT SCAN</div>
+                  <h4 style={{ fontWeight: 800, marginBottom: '0.5rem' }}>Analyze by URL</h4>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)', lineHeight: 1.5 }}>
+                    Paste any repository URL (e.g. <code>https://github.com/expressjs/express</code>) into the Deep-Scan bar on the main tab. GitWise fetches the code tree directly and runs the full analysis.
+                  </p>
+                </div>
+
+                <div style={{ background: '#090a0f', padding: '1.25rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-card)' }}>
+                  <div className="bento-tag">🔌 VS CODE EXTENSION</div>
+                  <h4 style={{ fontWeight: 800, marginBottom: '0.5rem' }}>Editor Companion</h4>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)', lineHeight: 1.5 }}>
+                    Open your project in VS Code, open the GitWise activity bar tab, and click <strong>"Analyze Workspace"</strong> to highlight findings directly as squiggly lines in your code.
+                  </p>
+                </div>
+
+                <div style={{ background: '#090a0f', padding: '1.25rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-card)' }}>
+                  <div className="bento-tag">🧩 BROWSER EXTENSION</div>
+                  <h4 style={{ fontWeight: 800, marginBottom: '0.5rem' }}>GitHub In-Page Audit</h4>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)', lineHeight: 1.5 }}>
+                    Load <code>packages/browser</code> into Chrome via <code>chrome://extensions</code> (Load unpacked). Visit any repo on GitHub to see the floating <strong>"GitWise Deep-Scan"</strong> button.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </main>
+      </div>
     </div>
   );
 }

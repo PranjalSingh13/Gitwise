@@ -123,6 +123,94 @@ export function readDirectoryRecursively(
   return files;
 }
 
+export async function fetchGithubRepoFiles(
+  repoUrlOrSlug: string,
+  maxFiles = 40
+): Promise<{ repoName: string; files: FileEntry[] }> {
+  let clean = repoUrlOrSlug.trim();
+  clean = clean.replace(/\.git\/?$/, '');
+  clean = clean.replace(/^https?:\/\/github\.com\//i, '');
+  const parts = clean.split('/').filter(Boolean);
+  if (parts.length < 2) {
+    throw new Error('Invalid GitHub repository format. Use "owner/repo" or "https://github.com/owner/repo"');
+  }
+
+  const owner = parts[0];
+  const repo = parts[1];
+  const repoName = `${owner}/${repo}`;
+
+  const headers: Record<string, string> = {
+    'User-Agent': 'GitWise-AI-Engine',
+    'Accept': 'application/vnd.github.v3+json'
+  };
+
+  const treeUrl = `https://api.github.com/repos/${owner}/${repo}/git/trees/HEAD?recursive=1`;
+  const treeRes = await fetch(treeUrl, { headers });
+  if (!treeRes.ok) {
+    if (treeRes.status === 404) {
+      throw new Error(`GitHub repository "${repoName}" not found. Verify it is public or spelled correctly.`);
+    }
+    if (treeRes.status === 403) {
+      throw new Error(`GitHub API rate limit exceeded. Please wait a minute or provide a personal access token.`);
+    }
+    throw new Error(`Failed to access GitHub repository (Status ${treeRes.status})`);
+  }
+
+  const treeData = await treeRes.json() as any;
+  const items = treeData.tree || [];
+
+  const CODE_EXTS = new Set([
+    '.ts', '.tsx', '.js', '.jsx', '.json', '.py', '.go', '.rs', '.java',
+    '.c', '.cpp', '.h', '.sql', '.yml', '.yaml', '.toml', '.env.example'
+  ]);
+  const PRIORITY_NAMES = new Set([
+    'package.json', 'readme.md', 'requirements.txt', 'cargo.toml', 'go.mod', 'dockerfile'
+  ]);
+
+  const candidates = items
+    .filter((item: any) => item.type === 'blob' && !item.path.includes('node_modules/') && !item.path.includes('.git/') && !item.path.includes('dist/') && !item.path.includes('build/'))
+    .sort((a: any, b: any) => {
+      const aBase = path.basename(a.path).toLowerCase();
+      const bBase = path.basename(b.path).toLowerCase();
+      if (PRIORITY_NAMES.has(aBase)) return -1;
+      if (PRIORITY_NAMES.has(bBase)) return 1;
+      return 0;
+    });
+
+  const selected = candidates.filter((item: any) => {
+    const ext = path.extname(item.path).toLowerCase();
+    const base = path.basename(item.path).toLowerCase();
+    return CODE_EXTS.has(ext) || PRIORITY_NAMES.has(base);
+  }).slice(0, maxFiles);
+
+  const files: FileEntry[] = [];
+  const chunkSize = 6;
+  for (let i = 0; i < selected.length; i += chunkSize) {
+    const batch = selected.slice(i, i + chunkSize);
+    await Promise.all(batch.map(async (item: any) => {
+      try {
+        const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${item.path}`;
+        const res = await fetch(rawUrl, { headers: { 'User-Agent': 'GitWise-AI-Engine' } });
+        if (res.ok) {
+          const content = await res.text();
+          if (content.length < 300_000) {
+            files.push({ path: item.path, content });
+          }
+        }
+      } catch {
+        // Skip unreadable files
+      }
+    }));
+  }
+
+  if (files.length === 0) {
+    throw new Error(`No readable code files could be loaded from ${repoName}.`);
+  }
+
+  return { repoName, files };
+}
+
+
 export async function analyzeRepository(
   repoName: string,
   files: FileEntry[]

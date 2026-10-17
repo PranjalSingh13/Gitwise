@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { config } from './config';
-import { analyzeRepository, readDirectoryRecursively } from './orchestrator/repo-analyzer';
+import { analyzeRepository, readDirectoryRecursively, fetchGithubRepoFiles } from './orchestrator/repo-analyzer';
 import { scanPullRequestDiff } from './orchestrator/pr-scanner';
 import { diagnoseGitError } from './orchestrator/git-doctor';
 import { ACADEMY_LESSONS } from './academy/lessons-data';
@@ -32,27 +32,33 @@ app.get('/api/v1/health', (req, res) => {
 // Deep Scan Full Repository
 app.post('/api/v1/analyze/repo', async (req, res) => {
   try {
-    const { repoName, dirPath, files } = req.body;
+    const { repoName, dirPath, files, githubUrl } = req.body;
 
     let targetFiles = files || [];
+    let targetName = repoName || 'unnamed-project';
 
-    if (dirPath && (!targetFiles || targetFiles.length === 0)) {
+    if (githubUrl) {
+      const fetched = await fetchGithubRepoFiles(githubUrl);
+      targetFiles = fetched.files;
+      targetName = fetched.repoName;
+    } else if (dirPath && (!targetFiles || targetFiles.length === 0)) {
       targetFiles = readDirectoryRecursively(dirPath);
     }
 
     if (!targetFiles || targetFiles.length === 0) {
       return res.status(400).json({
-        error: 'No files provided. Provide either a local "dirPath" or an array of "files".'
+        error: 'No files provided. Provide a "githubUrl", local "dirPath", or an array of "files".'
       });
     }
 
-    const report = await analyzeRepository(repoName || 'unnamed-project', targetFiles);
+    const report = await analyzeRepository(targetName, targetFiles);
     return res.json(report);
   } catch (error: any) {
     console.error('Error in /analyze/repo:', error);
     return res.status(500).json({ error: error.message || 'Failed to analyze repository' });
   }
 });
+
 
 // PR Poison Scanner & PR Copilot
 app.post('/api/v1/analyze/diff', async (req, res) => {
