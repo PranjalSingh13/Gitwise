@@ -1,0 +1,18 @@
+{
+  "name": "gitwise-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm --workspace=@gitwise/api run dev",
+    "dev:web": "npm --workspace=@gitwise/web run dev",
+    "build:shared": "npm --workspace=@gitwise/shared run build",
+    "build": "npm run --workspaces --if-present build",
+    "test": "npm run --workspaces --if-present test"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}

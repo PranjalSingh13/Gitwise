@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        width: 320px;
+        padding: 16px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #0d111b;
+        color: #f8fafc;
+        margin: 0;
+      }
+      h3 { margin-top: 0; font-size: 16px; font-weight: 800; background: linear-gradient(135deg, #6366f1, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+      p { font-size: 13px; color: #94a3b8; line-height: 1.4; }
+      button {
+        width: 100%;
+        padding: 10px;
+        background: #6366f1;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 13px;
+        margin-bottom: 8px;
+      }
+      button:hover { background: #4f46e5; }
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
+    </style>
+  </head>
+  <body>
+    <h3>GitWise Companion</h3>
+    <p>Understand Git. Ship safer code. One-click analysis directly on any GitHub repository.</p>
+    <button id="btn-dashboard">🌐 Open Web Dashboard</button>
+    <button id="btn-status" class="btn-secondary">🩺 Check API Connection</button>
+    <div id="status-text" style="font-size: 12px; margin-top: 8px; color: #10b981;"></div>
+    <script src="popup.js"></script>
+  </body>
+</html>

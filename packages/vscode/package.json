@@ -1,0 +1,79 @@
+{
+  "name": "gitwise-vscode",
+  "displayName": "GitWise — Understand Git & Ship Safer Code",
+  "description": "One-click repository deep scan, PR poison analyzer, and AI Git Doctor for any project.",
+  "version": "1.0.0",
+  "publisher": "gitwise",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Linters",
+    "Programming Languages",
+    "Education"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "gitwise-sidebar",
+          "title": "GitWise",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "gitwise-sidebar": [
+        {
+          "type": "webview",
+          "id": "gitwise.sidebarView",
+          "title": "GitWise Deep-Scan"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "gitwise.analyzeWorkspace",
+        "title": "GitWise: Analyze Entire Workspace",
+        "category": "GitWise"
+      },
+      {
+        "command": "gitwise.explainError",
+        "title": "GitWise: Diagnose Git Error",
+        "category": "GitWise"
+      },
+      {
+        "command": "gitwise.scanActiveFile",
+        "title": "GitWise: Scan Active File for Secrets & Vulnerabilities",
+        "category": "GitWise"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "gitwise.scanActiveFile",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "gitwise.scanActiveFile",
+          "group": "gitwise"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.x",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.7.3"
+  }
+}
